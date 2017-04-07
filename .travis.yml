@@ -1,0 +1,28 @@
+language: python
+python:
+- '2.7'
+- '3.3'
+- '3.4'
+- '3.5'
+install: pip install tox-travis
+script: tox
+after_success:
+- coveralls
+deploy:
+  provider: pypi
+  user: mfalesni
+  password:
+    secure: eklp+CztKhp2FC5+JU+pt6xsPeulsSU087fFgHTpVbuuN0cCu7ZMSN13A+l74L17Uxa8n7rH5icJFQNvjWToioDzyWHvOvkyy6KKSHYHbXqLQdk8DPBW4mUq9SRcfmePsmxTb91kgr14KdaLnJpZZICwMcutRBKF4mm1XBMVPPNucDDyOUtoQAcLE92wGZD14VJPxFO09dDHj7qy36iOS2ZvLGFIi2TmE6TuFlG3gvXfgTXNAkFEHgu3xrf1y1Z71SX2dsa5gJ4LKq+QY+SRhlBFOwnktSjVudZEVei4JjxaJWCKBG66o4vg9cDGh6o6nJZkTaJoImtt0Vv2AzXqw3RHht5J4yudvtn81jmP767cdaS7YIdC3AZ8MiEiDbbAo0OSu0paF8mgIC6XAAXHJ08aDIdTOrQlgsmQLjN+ft7Q5hozEzpiHzPDMYzYixVoPjeFDY943g0eEN7XO7dcyQQAfrEb7fGKTkO8EaOcGBmxFJvba1gd315V1a2iG46QZG6O5qdwZrPqYhggi39zJzjVynBRrl9g4kVu5WWnucWdIv3LUTfyFnhNrFAT6XDNMOSTWCdPuP3EDj/aiOXu6FRp4+PW0vpKB0DrmSLRKlWpNe43jd+YqnJJRkm4jyIh+SX+Nj39fKagbdHWFbxUtomrsawfC2EpzMhqA6CPEbA=
+  on:
+    tags: true
+    distributions: sdist bdist_wheel
+    repo: RedHatQE/widgetastic.patternfly
+before_install:
+  - "export PHANTOMJS_VERSION=2.1.1"
+  - "phantomjs --version"
+  - "export PATH=$PWD/travis_phantomjs/phantomjs-$PHANTOMJS_VERSION-linux-x86_64/bin:$PATH"
+  - "phantomjs --version"
+  - "if [ $(phantomjs --version) != '$PHANTOMJS_VERSION' ]; then rm -rf $PWD/travis_phantomjs; mkdir -p $PWD/travis_phantomjs; fi"
+  - "if [ $(phantomjs --version) != '$PHANTOMJS_VERSION' ]; then wget https://github.com/Medium/phantomjs/releases/download/v$PHANTOMJS_VERSION/phantomjs-$PHANTOMJS_VERSION-linux-x86_64.tar.bz2 -O $PWD/travis_phantomjs/phantomjs-$PHANTOMJS_VERSION-linux-x86_64.tar.bz2; fi"
+  - "if [ $(phantomjs --version) != '$PHANTOMJS_VERSION' ]; then tar -xvf $PWD/travis_phantomjs/phantomjs-$PHANTOMJS_VERSION-linux-x86_64.tar.bz2 -C $PWD/travis_phantomjs; fi"
+  - "phantomjs --version"

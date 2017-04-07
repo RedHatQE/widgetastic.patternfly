@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""This package contains classes that represent widgets in Patternfly for Widgetastic"""
 from __future__ import unicode_literals
 
 import re
@@ -18,8 +19,7 @@ from wait_for import wait_for, wait_for_decorator
 
 class CandidateNotFound(Exception):
     """
-    Raised if there is no candidate found whilst trying to traverse a tree in
-    :py:meth:`cfme.web_ui.Tree.click_path`.
+    Raised if there is no candidate found whilst trying to traverse a tree.
     """
     def __init__(self, d):
         self.d = d
@@ -1003,7 +1003,7 @@ class BootstrapTreeview(Widget):
             The leaf WebElement.
 
         Raises:
-            :py:class:`exceptions.CandidateNotFound` when the node is not found in the tree.
+            :py:class:`CandidateNotFound` when the node is not found in the tree.
         """
         self.browser.plugin.ensure_page_safe()
         self.logger.info('Expanding path %s on tree %s', self.pretty_path(path), self.tree_id)
