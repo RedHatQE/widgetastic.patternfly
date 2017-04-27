@@ -6,6 +6,7 @@ import re
 import six
 import time
 from cached_property import cached_property
+from collections import namedtuple
 
 from widgetastic.exceptions import NoSuchElementException, UnexpectedAlertPresentException
 from widgetastic.log import call_sig
@@ -635,6 +636,7 @@ class BootstrapSelect(Widget, ClickableMixin):
         can_hide_on_select: Whether the select can hide after selection, important for
             :py:meth:`close` to work properly.
     """
+    Option = namedtuple("Option", ["text", "value"])
     ROOT = ParametrizedLocator('.//button[normalize-space(@data-id)={@id|quote}]/..')
     BY_VISIBLE_TEXT = './div/ul/li/a[./span[contains(@class, "text") and normalize-space(.)={}]]'
 
@@ -693,6 +695,17 @@ class BootstrapSelect(Widget, ClickableMixin):
             for e in self.browser.elements(
                 './div/ul/li[contains(@class, "selected")]/a/span[contains(@class, "text")]',
                 parent=self)]
+
+    @property
+    def all_options(self):
+        b = self.browser
+        return [
+            self.Option(
+                b.text(b.element('.//span[contains(@class, "text")]', parent=e)),
+                e.get_attribute("data-original-index")
+            )
+            for e in b.elements('./div/ul/li', parent=self)
+        ]
 
     @property
     def selected_option(self):
