@@ -96,7 +96,7 @@ class Button(Widget, ClickableMixin):
             else:
                 raise TypeError('An illegal combination of text params')
         else:
-            # Join the kwargs
+            # Join the kwargs, if any
             self.locator_conditions = ' and '.join(
                 '@{}={}'.format(attr, quote(value)) for attr, value in kwargs.items())
         classes = kwargs.pop('classes', [])
@@ -105,12 +105,14 @@ class Button(Widget, ClickableMixin):
             self.locator_conditions += ' and '.join(
                 'contains(@class, {})'.format(quote(klass))
                 for klass in classes)
+        if self.locator_conditions:
+            self.locator_conditions = 'and ({})'.format(self.locator_conditions)
 
     # TODO: Handle input value the same way as text for other tags
     def __locator__(self):
         return (
             './/*[(self::a or self::button or (self::input and (@type="button" or @type="submit")))'
-            ' and contains(@class, "btn") and ({})]'.format(self.locator_conditions))
+            ' and contains(@class, "btn") {}]'.format(self.locator_conditions))
 
     @property
     def active(self):
