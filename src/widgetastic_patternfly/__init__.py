@@ -1311,6 +1311,47 @@ class Dropdown(Widget):
         return '{}({!r})'.format(type(self).__name__, self.text)
 
 
+class SelectorDropdown(Dropdown):
+    """A variant of :py:class:`Dropdown` which allows selecting values.
+
+    Unlike :py:class:`Dropdown` it supports read and fill because it usually does not change pages
+    like ordinary dropdown does.
+
+    Args:
+        button_attr: Name of the attribute matched on the button inside the dropdown div
+        button_attr_value: The value to match on that attr
+    """
+    ROOT = ParametrizedLocator(
+        './/div[contains(@class, "dropdown") and ./button[@{@b_attr}={@b_attr_value|quote}]]')
+
+    def __init__(self, parent, button_attr, button_attr_value, logger=None):
+        # Skipping Dropdown init because it has nothing interesting for us
+        Widget.__init__(self, parent, logger=logger)
+        self.b_attr = button_attr
+        self.b_attr_value = button_attr_value
+
+    @property
+    def currently_selected(self):
+        """Returns the currently selected item text."""
+        return self.browser.text(self.BUTTON_LOCATOR, parent=self)
+
+    def item_select(self, item, *args, **kwargs):
+        super(SelectorDropdown, self).item_select(item, *args, **kwargs)
+        wait_for(lambda: self.currently_selected == item, num_sec=3, delay=0.2)
+
+    def read(self):
+        return self.currently_selected
+
+    def fill(self, value):
+        if value == self.currently_selected:
+            return False
+        self.item_select(value)
+        return True
+
+    def __repr__(self):
+        return '{}({!r}, {!r})'.format(type(self).__name__, self.b_attr, self.b_attr_value)
+
+
 class BootstrapSwitch(Checkbox):
     """ represents checkbox like switch control.
     widgetastic checkbox doesn't work right for this control.
