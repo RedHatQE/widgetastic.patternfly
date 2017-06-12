@@ -1380,3 +1380,61 @@ class BootstrapSwitch(Checkbox):
     @property
     def selected(self):
         return self.browser.is_selected(parent=self, locator=self.input)
+
+
+class AboutModal(View):
+    """
+    Represents the patternfly about modal
+
+    Provides a close method
+    """
+    ROOT = ParametrizedLocator('//div[normalize-space(@id)={@id|quote} and '
+                               'contains(@class, "modal") and contains(@class, "fade")]')
+    CLOSE_LOC = './/div[@class="modal-header"]/button[@class="close" and @data-dismiss="modal"]'
+    TITLE_LOC = './/div[@class="modal-body"]/h2'
+    TRADE_LOC = './/div[@class="modal-body"]/div[@class="trademark-pf"]'
+    ITEMS_LOC = './/div[@class="modal-body"]/div[@class="product-versions-pf"]/ul/li'
+    # These are relative to the <li> elements under LIST_LOC above
+    LABEL_LOC = './strong'
+
+    def __init__(self, parent, id, logger=None):
+        Widget.__init__(self, parent, logger=logger)
+        self.id = id
+
+    @property
+    def is_open(self):
+        """Is the about modal displayed right now"""
+        return 'in' in self.browser.classes(self)
+
+    @property
+    def is_displayed(self):
+        return self.is_open
+
+    @property
+    def title(self):
+        return self.browser.text(self.TITLE_LOC, parent=self)
+
+    @property
+    def trademark(self):
+        return self.browser.text(self.TRADE_LOC, parent=self)
+
+    def close(self):
+        """Close the modal"""
+        self.browser.click(self.CLOSE_LOC, parent=self)
+
+    def items(self):
+        """
+        Generate a dictionary of key-value pairs of fields and their values
+        :return: dictionary of keys matching the bold field labels and their values
+        """
+        items = {}
+        list_elements = self.browser.elements(self.ITEMS_LOC, parent=self)
+        for element in list_elements:
+            # each list item has a label in a <strong> and the value following
+            # can't select this text after the strong via xpath and get an element
+            key = self.browser.text(self.LABEL_LOC, parent=element)
+            element_text = self.browser.text(element)
+
+            # value will include the label from the <strong> block, parse it out
+            items.update({key: element_text.replace(key, '', 1).lstrip()})
+        return items
