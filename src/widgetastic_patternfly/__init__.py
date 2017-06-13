@@ -170,18 +170,22 @@ class Input(TextInput):
 
 class FlashMessages(Widget):
     """Represents the block of flash messages."""
+    ROOT = ParametrizedLocator('{@locator}')
+
     def __init__(self, parent, locator, logger=None):
         Widget.__init__(self, parent, logger=logger)
         self.locator = locator
 
-    def __locator__(self):
-        return self.locator
+    @property
+    def present(self):
+        """Slightly weird, but this is an exceptional case. Ensure the root element is present.
+
+        Detects flash message locator change.
+        """
+        return bool(self.browser.elements(self))
 
     def read(self):
-        result = []
-        for message in self.messages:
-            result.append(message.read())
-        return result
+        return [message.read() for message in self.messages]
 
     @property
     def messages(self):
@@ -200,6 +204,8 @@ class FlashMessages(Widget):
 
     def assert_no_error(self):
         self.logger.info('asserting there are no error messages')
+        if not self.present:
+            raise AssertionError('assert_no_error: The flash message root locator not present')
         for message in self.messages:
             if message.type not in {'success', 'info'}:
                 self.logger.error('%s: %r', message.type, message.text)
@@ -212,6 +218,8 @@ class FlashMessages(Widget):
             self.logger.info('asserting the message %r of type %r is present', text, t)
         else:
             self.logger.info('asserting the message %r is present', text)
+        if not self.present:
+            raise AssertionError('assert_no_error: The flash message root locator not present')
         for message in self.messages:
             if message.text == text:
                 if t is not None:
