@@ -11,7 +11,7 @@ from collections import namedtuple
 from widgetastic.exceptions import NoSuchElementException, UnexpectedAlertPresentException
 from widgetastic.log import call_sig
 from widgetastic.utils import ParametrizedLocator, VersionPick
-from widgetastic.widget import ClickableMixin, TextInput, Widget, View, Checkbox, \
+from widgetastic.widget import ClickableMixin, TextInput, Text, Widget, View, Checkbox, \
     do_not_read_this_widget
 from widgetastic.xpath import quote
 
@@ -1382,7 +1382,7 @@ class BootstrapSwitch(Checkbox):
         return self.browser.is_selected(parent=self, locator=self.input)
 
 
-class AboutModal(View):
+class AboutModal(Widget):
     """
     Represents the patternfly about modal
 
@@ -1391,11 +1391,12 @@ class AboutModal(View):
     ROOT = ParametrizedLocator('//div[normalize-space(@id)={@id|quote} and '
                                'contains(@class, "modal") and contains(@class, "fade")]')
     CLOSE_LOC = './/div[@class="modal-header"]/button[@class="close" and @data-dismiss="modal"]'
-    TITLE_LOC = './/div[@class="modal-body"]/h2'
-    TRADE_LOC = './/div[@class="modal-body"]/div[@class="trademark-pf"]'
     ITEMS_LOC = './/div[@class="modal-body"]/div[@class="product-versions-pf"]/ul/li'
-    # These are relative to the <li> elements under LIST_LOC above
+    # These are relative to the <li> elements under ITEMS_LOC above
     LABEL_LOC = './strong'
+    # widgets for the title+trademark lines
+    title_widget = Text(locator='.//div[@class="modal-body"]/h2')
+    trade_widget = Text(locator='.//div[@class="modal-body"]/div[@class="trademark-pf"]')
 
     def __init__(self, parent, id, logger=None):
         Widget.__init__(self, parent, logger=logger)
@@ -1410,17 +1411,17 @@ class AboutModal(View):
     def is_displayed(self):
         return self.is_open
 
-    @property
-    def title(self):
-        return self.browser.text(self.TITLE_LOC, parent=self)
-
-    @property
-    def trademark(self):
-        return self.browser.text(self.TRADE_LOC, parent=self)
-
     def close(self):
         """Close the modal"""
         self.browser.click(self.CLOSE_LOC, parent=self)
+
+    @property
+    def title(self):
+        return self.title_widget.read()
+
+    @property
+    def trademark(self):
+        return self.trade_widget.read()
 
     def items(self):
         """
