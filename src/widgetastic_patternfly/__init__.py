@@ -88,7 +88,7 @@ class Button(Widget, ClickableMixin):
         self.kwargs = kwargs
         classes = kwargs.pop('classes', [])
         if text:
-            if kwargs and kwargs.keys():
+            if kwargs:  # classes should have been the only kwarg combined with text args
                 raise TypeError('If you pass button text then only pass classes in addition')
             if len(text) == 1:
                 self.locator_conditions = 'normalize-space(.)={}'.format(quote(text[0]))
