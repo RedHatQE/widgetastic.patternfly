@@ -1371,14 +1371,7 @@ class BootstrapSwitch(BaseInput):
         switch.read()
     """
 
-    XPATH = """\
-    function xpath(xpath) {
-        var nt = XPathResult.ANY_UNORDERED_NODE_TYPE;
-        return document.evaluate(xpath, document, null, nt, null).singleNodeValue;
-    }
-    """
     PARENT = './..'
-    TEXT = '/../../following-sibling::text()[1]'
     ROOT = ParametrizedLocator('.//div/text()[normalize-space(.){@label}]/'
                                'preceding-sibling::div[1]{@input}')
 
@@ -1403,18 +1396,6 @@ class BootstrapSwitch(BaseInput):
     @property
     def selected(self):
         return self.browser.is_selected(self)
-
-    @property
-    def text(self):
-        """Returns text description of the BootstrapSwitch widget.
-
-        Returns: str
-        """
-        return self._label or self.browser.execute_script(
-            "{script} return xpath({arg}).textContent;".format(
-                script=self.XPATH,
-                arg=quote(self.ROOT.locator + self.TEXT)
-            )).strip()
 
     @property
     def _clickable_el(self):
