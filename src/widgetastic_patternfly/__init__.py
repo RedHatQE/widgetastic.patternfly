@@ -393,6 +393,79 @@ class NavDropdown(Widget, ClickableMixin):
         return '{}({!r})'.format(type(self).__name__, self.locator)
 
 
+class BootstrapNav(Widget):
+    """Encapsulate a Bootstrap nav component
+
+    PatternFly is based on Bootstrap, and thus many of the Bootstrap components are available to
+    PatternFly users. This widget provides convenience methods for the Bootstrap nav component for
+    clicking on links and determining if an item in the nav is disabled.
+
+    When instantiating this widget, use the XPath locator to point to exactly which Bootstrap nav
+    you wish to work with.
+
+    .. _code:: python
+
+       nav = BootstrapNav('//div[id="main"]/ul[@contains(@class, "nav")]')
+
+    See http://getbootstrap.com/components/#nav for more information on Bootstrap nav components.
+    """
+    ROOT = ParametrizedLocator('{@locator}')
+    CURRENTLY_SELECTED = './/li[contains(@class, "active")]/a'
+    TEXT_MATCHING = './/li/a[text()={txt}]'
+    ATTR_MATCHING = './/li/a[@{attr}={txt}]'
+    TEXT_DISABLED = './/li[contains(@class, "disabled")]/a[text()={txt}]'
+    ATTR_DISABLED = './/li[contains(@class, "disabled")]/a[@{attr}={txt}]'
+    VALID_ATTRS = {'href', 'title', 'class', 'id'}
+
+    def __init__(self, parent, locator, logger=None):
+        """Create the widget"""
+        Widget.__init__(self, parent, logger=logger)
+        self.locator = locator
+
+    def __repr__(self):
+        """String representation of this object"""
+        return '{}({!r})'.format(type(self).__name__, self.locator)
+
+    @property
+    def currently_selected(self):
+        """A property to return the currently selected menu item"""
+        return [self.browser.text(el)
+            for el in self.browser.elements(self.CURRENTLY_SELECTED)]
+
+    def read(self):
+        """Implement read()"""
+        return self.currently_selected
+
+    def select(self, text=None, **kwargs):
+        """Select/click an item from the menu"""
+        if text:
+            xpath = self.TEXT_MATCHING.format(txt=quote(text))
+        elif self.VALID_ATTRS & set(kwargs.keys()):
+            attr = (self.VALID_ATTRS & set(kwargs.keys())).pop()
+            xpath = self.ATTR_MATCHING.format(attr=attr, txt=quote(kwargs[attr]))
+        else:
+            raise KeyError(
+                'Either text or one of {} needs to be specified'.format(self.VALID_ATTRS))
+        link = self.browser.element(xpath)
+        self.browser.click(link)
+
+    def is_disabled(self, text=None, **kwargs):
+        """Check if an item is disabled"""
+        if text:
+            xpath = self.TEXT_DISABLED.format(txt=quote(text))
+        elif self.VALID_ATTRS & set(kwargs.keys()):
+            attr = (self.VALID_ATTRS & set(kwargs.keys())).pop()
+            xpath = self.ATTR_DISABLED.format(attr=attr, txt=quote(kwargs[attr]))
+        else:
+            raise KeyError(
+                'Either text or one of {} needs to be specified'.format(self.VALID_ATTRS))
+        try:
+            self.browser.element(xpath)
+            return True
+        except NoSuchElementException:
+            return False
+
+
 class VerticalNavigation(Widget):
     """The Patternfly Vertical navigation."""
     CURRENTLY_SELECTED = './/li[contains(@class, "active")]/a'
