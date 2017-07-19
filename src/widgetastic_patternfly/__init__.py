@@ -597,7 +597,8 @@ class Tab(View, ClickableMixin):
     TAB_NAME = None
     INDIRECT = True
     ROOT = ParametrizedLocator(
-        './/ul[contains(@class, "nav-tabs")]/li[normalize-space(.)={@tab_name|quote}]')
+        './/ul[contains(@class, "nav-tabs") and ./li[normalize-space(.)={@tab_name|quote}]]'
+        '/following-sibling::div[contains(@class, "tab-content")]')
 
     @property
     def tab_name(self):
