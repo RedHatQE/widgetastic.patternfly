@@ -8,10 +8,11 @@ import time
 from cached_property import cached_property
 from collections import namedtuple
 
-from widgetastic.exceptions import NoSuchElementException, UnexpectedAlertPresentException
+from widgetastic.exceptions import NoSuchElementException, UnexpectedAlertPresentException, \
+    WidgetOperationFailed
 from widgetastic.log import call_sig
 from widgetastic.utils import ParametrizedLocator, VersionPick
-from widgetastic.widget import ClickableMixin, TextInput, Text, Widget, View, Checkbox, \
+from widgetastic.widget import BaseInput, ClickableMixin, TextInput, Text, Widget, View, \
     do_not_read_this_widget
 from widgetastic.xpath import quote
 
@@ -1425,34 +1426,65 @@ class SelectorDropdown(Dropdown):
         return '{}({!r}, {!r})'.format(type(self).__name__, self.b_attr, self.b_attr_value)
 
 
-class BootstrapSwitch(Checkbox):
-    """ represents checkbox like switch control.
-    widgetastic checkbox doesn't work right for this control.
-    So, this widget is some kind of enhancement
+class BootstrapSwitch(BaseInput):
+    """ represents checkbox like switch control. Widgetastic checkbox doesn't work right for
+    this control.
     .. code-block:: python
 
         switch = BootstrapSwitch(id="default_tls_verify"')
         switch.fill(True)
         switch.read()
     """
-    ROOT = ParametrizedLocator('//div[contains(@class, "bootstrap-switch-container") and '
-                               '{@input}]')
 
-    def __init__(self, parent, id=None, name=None, logger=None):
-        if not (id or name):
-            raise ValueError('either id or name should be present')
-        elif name is not None:
-            id_attr = '@name={}'.format(quote(name))
+    PARENT = './..'
+    ROOT = ParametrizedLocator('.//div/text()[normalize-space(.){@label}]/'
+                               'preceding-sibling::div[1]{@input}')
+
+    def __init__(self, parent, id=None, name=None, label=None, logger=None):
+        self._label = label
+        if not (id or name or self._label):
+            raise ValueError('either id, name or label should be present')
+        elif name is not None and self._label is None:
+            self.input = '//input[@name={}]'.format(quote(name))
+            self.label = ''
+        elif id is not None and self._label is None:
+            self.input = '//input[@id={}]'.format(quote(id))
+            self.label = ''
+        elif self._label is not None and name is None and id is None:
+            self.input = '//input'
+            self.label = '={}'.format(quote(self._label))
         else:
-            id_attr = '@id={}'.format(quote(id))
+            raise ValueError('label, id and name cannot be used together')
 
-        self.input = './/input[{}]'.format(id_attr)
-
-        Checkbox.__init__(self, parent, locator=self.ROOT, logger=logger)
+        BaseInput.__init__(self, parent, locator=self.ROOT, logger=logger)
 
     @property
     def selected(self):
-        return self.browser.is_selected(parent=self, locator=self.input)
+        return self.browser.is_selected(self)
+
+    @property
+    def _clickable_el(self):
+        """input itself is not clickable because it's hidden, instead we should click on a parent
+        element e.g. div.
+
+        Returns: selenium webelement
+        """
+        return self.browser.element(parent=self, locator=self.PARENT)
+
+    def fill(self, value):
+        value = bool(value)
+        current_value = self.selected
+        if value == current_value:
+            return False
+        else:
+            self.browser.click(self._clickable_el)
+            if self.selected != value:
+                raise WidgetOperationFailed('Failed to set the bootstrap switch to'
+                    ' requested value.')
+            return True
+
+    def read(self):
+        return self.selected
 
 
 class AboutModal(Widget):
