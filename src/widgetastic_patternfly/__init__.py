@@ -1437,8 +1437,10 @@ class BootstrapSwitch(BaseInput):
     """
 
     PARENT = './..'
-    ROOT = ParametrizedLocator('.//div/text()[normalize-space(.){@label}]/'
-                               'preceding-sibling::div[1]{@input}')
+    ROOT = ParametrizedLocator('.//div/text()[normalize-space(.)={@label|quote}]/'
+                               'preceding-sibling::div[1]//'
+                               'div[contains(@class, "bootstrap-switch-container")]'
+                               '{@input}')
 
     def __init__(self, parent, id=None, name=None, label=None, logger=None):
         self._label = label
@@ -1452,7 +1454,7 @@ class BootstrapSwitch(BaseInput):
             self.label = ''
         elif self._label is not None and name is None and id is None:
             self.input = '//input'
-            self.label = '={}'.format(quote(self._label))
+            self.label = self._label
         else:
             raise ValueError('label, id and name cannot be used together')
 
@@ -1461,6 +1463,10 @@ class BootstrapSwitch(BaseInput):
     @property
     def selected(self):
         return self.browser.is_selected(self)
+
+    @property
+    def is_displayed(self):
+        return self.browser.is_displayed(locator=self.PARENT, parent=self)
 
     @property
     def _clickable_el(self):
