@@ -87,9 +87,10 @@ class Button(Widget, ClickableMixin):
         Widget.__init__(self, parent, logger=logger)
         self.args = text
         self.kwargs = kwargs
+        classes = kwargs.pop('classes', [])
         if text:
-            if kwargs and 'classes' not in kwargs:
-                raise TypeError('If you pass button text then do not pass anything else.')
+            if kwargs:  # classes should have been the only kwarg combined with text args
+                raise TypeError('If you pass button text then only pass classes in addition')
             if len(text) == 1:
                 self.locator_conditions = 'normalize-space(.)={}'.format(quote(text[0]))
             elif len(text) == 2 and text[0].lower() == 'contains':
@@ -100,7 +101,7 @@ class Button(Widget, ClickableMixin):
             # Join the kwargs, if any
             self.locator_conditions = ' and '.join(
                 '@{}={}'.format(attr, quote(value)) for attr, value in kwargs.items())
-        classes = kwargs.pop('classes', [])
+
         if classes:
             self.locator_conditions += ' and '
             self.locator_conditions += ' and '.join(
