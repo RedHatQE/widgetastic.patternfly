@@ -1463,7 +1463,15 @@ class BootstrapSwitch(BaseInput):
 
     @property
     def selected(self):
-        return self.browser.is_selected(self)
+        # it seems there is a bug in patternfly lib because in some cases
+        # BootstrapSwitch->input.checked returns False when control is definitely checked
+        classes = self.browser.classes(self)
+        if 'ng-not-empty' in classes:
+            return True
+        elif 'ng-empty' in classes:
+            return False
+        else:
+            return self.browser.is_selected(self)
 
     @property
     def is_displayed(self):
