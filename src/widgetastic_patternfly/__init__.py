@@ -633,35 +633,33 @@ class Accordion(View, ClickableMixin):
     They are like views that contain widgets. If a widget is accessed in the accordion, the
     accordion makes sure that it is open.
 
-    You need to set the ACCORDION_NAME to correspond with teh text in the accordion.
+    You need to set the ``ACCORDION_NAME`` to correspond with the text in the accordion.
+    If the accordion title is just a capitalized version of the accordion class name, you do not
+    need to set the ``ACCORDION_NAME``.
 
-    If the accordion is in an exotic location, you also have to change the ROOT_LOCATOR. Bear in
-    mind that the A_LOCATOR is joined immediately behind that locator.
+    If the accordion is in an exotic location, you also have to change the ``ROOT``.
 
-    Accordions can contain trees. Basic TREE_LOCATOR is tuned after ManageIQ so if your UI has a
+    Accordions can contain trees. Basic ``TREE_LOCATOR`` is tuned after ManageIQ so if your UI has a
     different structure, you should change this locator accordingly.
     """
     ACCORDION_NAME = None
-    ROOT_LOCATOR = './/div[contains(@class, "panel-group") and ./div[contains(@class, "panel")]]'
-    A_LOCATOR = '/div/div/h4/a[normalize-space(text())={}]'
+    ROOT = ParametrizedLocator(
+        './/div[contains(@class, "panel-group")]/div[contains(@class, "panel") and '
+        './div/h4/a[normalize-space(.)={@accordion_name|quote}]]')
     TREE_LOCATOR = '|'.join([
-        '../../..//div[contains(@class, "treeview") and ./ul]',
-        '../../..//div[./ul[contains(@class, "dynatree-container")]]'])
+        './/div[contains(@class, "treeview") and ./ul]',
+        './/div[./ul[contains(@class, "dynatree-container")]]'])
 
     @property
     def accordion_name(self):
         return self.ACCORDION_NAME or type(self).__name__.capitalize()
-
-    def __locator__(self):
-        return self.ROOT_LOCATOR + self.A_LOCATOR.format(quote(self.accordion_name))
 
     @property
     def is_opened(self):
         attr = self.browser.get_attribute('aria-expanded', self)
         if attr is None:
             # Try other way
-            panel = self.browser.element(
-                '../../../div[contains(@class, "panel-collapse")]', parent=self)
+            panel = self.browser.element('./div[contains(@class, "panel-collapse")]')
             classes = self.browser.classes(panel)
             return 'collapse' in classes and 'in' in classes
         else:
@@ -680,6 +678,7 @@ class Accordion(View, ClickableMixin):
                 self.click()
 
     def close(self):
+        self.logger.info('closing')
         if self.is_opened:
             self.click()
 
@@ -695,14 +694,14 @@ class Accordion(View, ClickableMixin):
     @cached_property
     def tree_id(self):
         try:
-            div = self.browser.element(self.TREE_LOCATOR, parent=self)
+            div = self.browser.element(self.TREE_LOCATOR)
         except NoSuchElementException:
-            raise AttributeError('No tree in the accordion')
+            raise AttributeError('No tree in the accordion {}'.format(self.accordion_name))
         else:
             return self.browser.get_attribute('id', div)
 
     def __repr__(self):
-        return '<{} {!r}>'.format(type(self).__name__, self.accordion_name)
+        return '<Accordion {!r}>'.format(self.accordion_name)
 
 
 class BootstrapSelect(Widget, ClickableMixin):
