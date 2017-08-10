@@ -16,7 +16,7 @@ from widgetastic.widget import BaseInput, ClickableMixin, TextInput, Text, Widge
     do_not_read_this_widget
 from widgetastic.xpath import quote
 
-from wait_for import wait_for, wait_for_decorator
+from wait_for import wait_for, wait_for_decorator, TimedOutError
 
 
 class CandidateNotFound(Exception):
@@ -649,6 +649,7 @@ class Accordion(View, ClickableMixin):
     TREE_LOCATOR = '|'.join([
         './/div[contains(@class, "treeview") and ./ul]',
         './/div[./ul[contains(@class, "dynatree-container")]]'])
+    HEADER_LOCATOR = './div/h4/a'
 
     @property
     def accordion_name(self):
@@ -669,17 +670,30 @@ class Accordion(View, ClickableMixin):
     def is_closed(self):
         return not self.is_opened
 
+    def click(self):
+        """Override Clickable's click."""
+        self.browser.click(self.HEADER_LOCATOR)
+
     def open(self):
         if self.is_closed:
             self.logger.info('opening')
             self.click()
-            # Workaround for stupid Settings page, perhaps we put a try mechanism in here
-            if self.is_closed:
-                self.click()
+            try:
+                wait_for(lambda: self.is_opened, delay=0.1, num_sec=3)
+            except TimedOutError:
+                self.logger.warning('Could not open the accordion, trying clicking again')
+                # Workaround stupid pages, perhaps we put a try mechanism in here
+                if self.is_closed:
+                    self.click()
+                    try:
+                        wait_for(lambda: self.is_opened, delay=0.1, num_sec=3)
+                    except TimedOutError:
+                        self.logger.error('Could not open the accordion')
+                        raise Exception('Could not open accordion {}'.format(self.accordion_name))
 
     def close(self):
-        self.logger.info('closing')
         if self.is_opened:
+            self.logger.info('closing')
             self.click()
 
     def child_widget_accessed(self, widget):
