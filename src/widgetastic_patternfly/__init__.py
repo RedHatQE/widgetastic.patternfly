@@ -723,15 +723,29 @@ class BootstrapSelect(Widget, ClickableMixin):
 
     Args:
         id: id of the select, that is the ``data-id`` attribute on the ``button`` tag.
+        name: name of the select tag
+        locator: If none of above apply, you can also supply a full locator.
         can_hide_on_select: Whether the select can hide after selection, important for
             :py:meth:`close` to work properly.
     """
     Option = namedtuple("Option", ["text", "value"])
-    ROOT = ParametrizedLocator('.//button[normalize-space(@data-id)={@id|quote}]/..')
+    LOCATOR_START = './/div[contains(@class, "bootstrap-select")]'
+    ROOT = ParametrizedLocator('{@locator}')
     BY_VISIBLE_TEXT = './div/ul/li/a[./span[contains(@class, "text") and normalize-space(.)={}]]'
 
-    def __init__(self, parent, id, can_hide_on_select=False, logger=None):
+    def __init__(
+            self, parent, id=None, name=None, locator=None, can_hide_on_select=False, logger=None):
         Widget.__init__(self, parent, logger=logger)
+        if id is not None:
+            self.locator = self.LOCATOR_START + '/button[normalize-space(@data-id)={}]/..'.format(
+                quote(id))
+        elif name is not None:
+            self.locator = self.LOCATOR_START + '/select[normalize-space(@name)={}]/..'.format(
+                quote(name))
+        elif locator is not None:
+            self.locator = locator
+        else:
+            raise TypeError('You need to specify either, id, name or locator for BootstrapSelect')
         self.id = id
         self.can_hide_on_select = can_hide_on_select
 
