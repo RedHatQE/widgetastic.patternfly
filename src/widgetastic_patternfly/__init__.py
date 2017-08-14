@@ -17,6 +17,9 @@ from widgetastic.xpath import quote
 
 from wait_for import wait_for, wait_for_decorator, TimedOutError
 
+
+# Imports for convenience
+# TODO: Deprecate them?
 from .dropdowns import NavDropdown, Kebab, Dropdown, SelectorDropdown   # noqa
 from .exceptions import (                                                               # noqa
     CandidateNotFound, DropdownDisabled, DropdownItemNotFound, DropdownItemDisabled)    # noqa

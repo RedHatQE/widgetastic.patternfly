@@ -9,12 +9,17 @@ from .exceptions import DropdownDisabled, DropdownItemNotFound, DropdownItemDisa
 
 
 class Kebab(Widget):
+    """Represents the Patternfly 'Kebab' widget which looks like 3 dots that open a dropdown.
+
+    Args:
+        button_id: id of the button inside ``div.dropdown-kebab-pf``.
+    """
     ROOT = ParametrizedLocator(
         './/div[contains(@class, "dropdown-kebab-pf") and ./button[@id={@button_id|quote}]]')
     UL = './ul[contains(@class, "dropdown-menu")]'
     BUTTON = './button'
-    ITEM = './ul/li/a[normalize-space(.)={}]'
     ITEMS = './ul/li/a'
+    ITEM = ITEMS + '[normalize-space(.)={}]'
 
     def __init__(self, parent, button_id, logger=None):
         super(Kebab, self).__init__(parent, logger=logger)
