@@ -1465,10 +1465,14 @@ class BootstrapSwitch(BaseInput):
     """
 
     PARENT = './..'
-    ROOT = ParametrizedLocator('.//div/text()[normalize-space(.)={@label|quote}]/'
-                               'preceding-sibling::div[1]//'
-                               'div[contains(@class, "bootstrap-switch-container")]'
-                               '{@input}')
+    ROOT = ParametrizedLocator(
+        '|'.join([
+            './/div/text()[normalize-space(.)={@label|quote}]/'
+            'preceding-sibling::div[1]//'
+            'div[contains(@class, "bootstrap-switch-container")]'
+            '{@input}',
+            './/div/div[contains(@class, "bootstrap-switch-container")]'
+            '{@input}']))
 
     def __init__(self, parent, id=None, name=None, label=None, logger=None):
         self._label = label
