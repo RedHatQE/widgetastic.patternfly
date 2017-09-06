@@ -57,9 +57,11 @@ class Button(Widget, ClickableMixin):
         Button('Text of button (unless it is an input ...)')
         Button('contains', 'Text of button (unless it is an input ...)')
         Button(title='Show xyz')  # And such
+        Button(ng_something='foo')  # _ represents -, so this will match ng-something attribute
         Button('Add', classes=[Button.PRIMARY])
         assert button.active
         assert not button.disabled
+
     """
     CHECK_VISIBILITY = True
 
@@ -82,31 +84,45 @@ class Button(Widget, ClickableMixin):
     # Shape
     BLOCK = 'btn-block'
 
+    OPERATIONS = {
+        'contains': lambda value: 'contains(normalize-space(.), {})'.format(quote(value)),
+        'startswith': lambda value: 'starts-with(normalize-space(.), {})'.format(quote(value)),
+    }
+
+    @staticmethod
+    def process_attr_name(name):
+        """Replaces underscores with dashes to facilitate matching of attributes with dashes"""
+        return re.sub(r'_', '-', name)
+
     def __init__(self, parent, *text, **kwargs):
         logger = kwargs.pop('logger', None)
         Widget.__init__(self, parent, logger=logger)
         self.args = text
         self.kwargs = kwargs
-        classes = kwargs.pop('classes', [])
+        self.classes = kwargs.pop('classes', [])
         if text:
             if kwargs:  # classes should have been the only kwarg combined with text args
                 raise TypeError('If you pass button text then only pass classes in addition')
             if len(text) == 1:
                 self.locator_conditions = 'normalize-space(.)={}'.format(quote(text[0]))
-            elif len(text) == 2 and text[0].lower() == 'contains':
-                self.locator_conditions = 'contains(normalize-space(.), {})'.format(quote(text[1]))
+            elif len(text) == 2:
+                try:
+                    self.locator_conditions = self.OPERATIONS[text[0].lower()](text[1])
+                except KeyError:
+                    raise TypeError('Unknown operation {}'.format(text[0]))
             else:
                 raise TypeError('An illegal combination of text params')
         else:
             # Join the kwargs, if any
             self.locator_conditions = ' and '.join(
-                '@{}={}'.format(attr, quote(value)) for attr, value in kwargs.items())
+                '@{}={}'.format(self.process_attr_name(attr), quote(value))
+                for attr, value in kwargs.items())
 
-        if classes:
+        if self.classes:
             self.locator_conditions += ' and '
             self.locator_conditions += ' and '.join(
                 'contains(@class, {})'.format(quote(klass))
-                for klass in classes)
+                for klass in self.classes)
         if self.locator_conditions:
             self.locator_conditions = 'and ({})'.format(self.locator_conditions)
 
@@ -125,7 +141,8 @@ class Button(Widget, ClickableMixin):
         return self.browser.get_attribute('disabled', self) == 'disabled'
 
     def __repr__(self):
-        return '{}{}'.format(type(self).__name__, call_sig(self.args, self.kwargs))
+        return '{}{}'.format(
+            type(self).__name__, call_sig(self.args, dict(self.kwargs, **self.classes)))
 
     @property
     def title(self):
