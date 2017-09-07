@@ -548,7 +548,8 @@ class VerticalNavigation(Widget):
                 self.browser.elements(self.SUB_LEVEL, parent=link))
             if expands and not finished:
                 self.logger.debug('moving to %s to open the next level', level)
-                self.browser.move_to_element(link)
+                # No safety check because previous command did it
+                self.browser.move_to_element(link, check_safe=False)
 
                 @wait_for_decorator(timeout='10s', delay=0.2)
                 def other_div_displayed():
@@ -556,14 +557,9 @@ class VerticalNavigation(Widget):
                         self.MATCHING_LI_FOR_DIV.format(quote(level)),
                         parent=current_div)
 
-                # The other child div should be displayed
-                current_div_width = current_div.size['width']
                 new_div = self.get_child_div_for(*passed_levels)
-                # We need to generate a correct stroke to a neighbouring div
-                new_div_width = new_div.size['width']
-                mouse_stroke_x = (current_div_width / 2) + (new_div_width / 2)
-                self.logger.debug('moving mouse by %d px right to the next level', mouse_stroke_x)
-                self.browser.move_by_offset(mouse_stroke_x, 0)
+                # No safety check because previous command did it
+                self.browser.move_to_element(new_div, check_safe=False)
                 current_div = new_div
             elif not expands and not finished:
                 raise ValueError(
@@ -571,7 +567,8 @@ class VerticalNavigation(Widget):
             else:
                 # finished
                 self.logger.debug('finishing the menu selection by clicking on %s', level)
-                self.browser.click(link, ignore_ajax=True)
+                # No safety check because previous command did it
+                self.browser.click(link, ignore_ajax=True, check_safe=False)
                 self.browser.handle_alert(wait=2.0, squash=True)
 
     def get_child_div_for(self, *levels):
