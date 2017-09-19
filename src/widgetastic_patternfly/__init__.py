@@ -132,6 +132,21 @@ class Button(Widget, ClickableMixin):
         return self.browser.get_attribute('title', self)
 
 
+class SaveButton(Button):
+    """
+        This widget is use for the Save/Add button in CFME
+
+        .. code-block:: python
+            SaveButton('Text of the Button')
+
+        Returns:
+             True if Button is disabled else False
+    """
+    @property
+    def disabled(self):
+        return 'disabled' in self.browser.classes(self)
+
+
 class ViewChangeButton(Widget, ClickableMixin):
     """A PatternFly/Bootstrap view selection button in CFME 56z
 
