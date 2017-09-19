@@ -122,7 +122,7 @@ class Button(Widget, ClickableMixin):
 
     @property
     def disabled(self):
-        return self.browser.get_attribute('disabled', self) == 'disabled'
+        return 'disabled' in self.browser.classes(self)
 
     def __repr__(self):
         return '{}{}'.format(type(self).__name__, call_sig(self.args, self.kwargs))
@@ -130,21 +130,6 @@ class Button(Widget, ClickableMixin):
     @property
     def title(self):
         return self.browser.get_attribute('title', self)
-
-
-class SaveButton(Button):
-    """
-        This widget is use for the Save/Add button in CFME
-
-        .. code-block:: python
-            SaveButton('Text of the Button')
-
-        Returns:
-             True if Button is disabled else False
-    """
-    @property
-    def disabled(self):
-        return 'disabled' in self.browser.classes(self)
 
 
 class ViewChangeButton(Widget, ClickableMixin):
