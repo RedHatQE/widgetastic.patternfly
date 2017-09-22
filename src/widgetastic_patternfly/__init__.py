@@ -644,6 +644,7 @@ class Accordion(View, ClickableMixin):
         './/div[contains(@class, "panel-group")]/div[contains(@class, "panel") and '
         './div/h4/a[normalize-space(.)={@accordion_name|quote}]]')
     TREE_LOCATOR = '|'.join([
+        './/miq-tree-view',
         './/div[contains(@class, "treeview") and ./ul]',
         './/div[./ul[contains(@class, "dynatree-container")]]'])
     HEADER_LOCATOR = './div/h4/a'
@@ -705,11 +706,11 @@ class Accordion(View, ClickableMixin):
     @cached_property
     def tree_id(self):
         try:
-            div = self.browser.element(self.TREE_LOCATOR)
+            el = self.browser.element(self.TREE_LOCATOR)
         except NoSuchElementException:
             raise AttributeError('No tree in the accordion {}'.format(self.accordion_name))
         else:
-            return self.browser.get_attribute('id', div)
+            return self.browser.get_attribute('id', el) or self.browser.get_attribute('name', el)
 
     def __repr__(self):
         return '<Accordion {!r}>'.format(self.accordion_name)
@@ -843,9 +844,12 @@ class BootstrapTreeview(Widget):
     You don't have to specify the ``tree_id`` if the hosting object implements ``tree_id``.
 
     Args:
-        tree_id: Id of the tree, the closest div to the root ``ul`` element.
+        tree_id: Id of the tree, the closest div or ``miq-tree-view`` to the root ``ul`` element.
     """
-    ROOT = ParametrizedLocator('#{@tree_id}')
+    ROOT = ParametrizedLocator('|'.join([
+        './/miq-tree-view[@name={@tree_id|quote}]/div',
+        './/div[@id={@tree_id|quote}]'
+    ]))
     ROOT_ITEM = './ul/li[1]'
     ROOT_ITEMS = './ul/li[not(./span[contains(@class, "indent")])]'
     ROOT_ITEMS_WITH_TEXT = (
