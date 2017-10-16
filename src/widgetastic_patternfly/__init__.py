@@ -593,15 +593,29 @@ class Tab(View, ClickableMixin):
 
     Selects itself automatically when any child widget gets accessed, ensuring that the widget is
     visible.
+
+    Args:
+        TAB_NAME: Name of the tab
+        IGNORE_WHEN_NOT_PRESENT: If hte tabs are not present, do not bother us with exceptions.
     """
     TAB_NAME = None
     INDIRECT = True
+    IGNORE_WHEN_NOT_PRESENT = False
     ROOT = ParametrizedLocator(
         './/ul[contains(@class, "nav-tabs")]/li[normalize-space(.)={@tab_name|quote}]')
 
     @property
     def tab_name(self):
         return self.TAB_NAME or type(self).__name__.capitalize()
+
+    @property
+    def present(self):
+        try:
+            self.is_active
+        except NoSuchElementException:
+            return False
+        else:
+            return True
 
     def is_active(self):
         return 'active' in self.browser.classes(self)
@@ -610,6 +624,9 @@ class Tab(View, ClickableMixin):
         return 'disabled' in self.browser.classes(self)
 
     def select(self):
+        if self.IGNORE_WHEN_NOT_PRESENT:
+            if not self.present:
+                return
         if not self.is_active():
             if self.is_disabled():
                 raise ValueError(
