@@ -608,15 +608,6 @@ class Tab(View, ClickableMixin):
     def tab_name(self):
         return self.TAB_NAME or type(self).__name__.capitalize()
 
-    @property
-    def present(self):
-        try:
-            self.is_active
-        except NoSuchElementException:
-            return False
-        else:
-            return True
-
     def is_active(self):
         return 'active' in self.browser.classes(self)
 
@@ -625,7 +616,8 @@ class Tab(View, ClickableMixin):
 
     def select(self):
         if self.IGNORE_WHEN_NOT_PRESENT:
-            if not self.present:
+            if not self.is_displayed:
+                self.logger.info('Tab not present and ignoring turned on - not touching the tab.')
                 return
         if not self.is_active():
             if self.is_disabled():
