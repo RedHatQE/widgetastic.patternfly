@@ -721,7 +721,8 @@ class BootstrapSelect(Widget, ClickableMixin):
     """
     Option = namedtuple("Option", ["text", "value"])
     ROOT = ParametrizedLocator('.//button[normalize-space(@data-id)={@id|quote}]/..')
-    BY_VISIBLE_TEXT = './div/ul/li/a[./span[contains(@class, "text") and normalize-space(.)={}]]'
+    BY_VISIBLE_TEXT = './div/ul/li/a[./span[contains(@class, "text") and'\
+                      'contains(normalize-space(.),{})]]'
 
     def __init__(self, parent, id, can_hide_on_select=False, logger=None):
         Widget.__init__(self, parent, logger=logger)
