@@ -434,11 +434,14 @@ class BootstrapNav(Widget):
     def select(self, text=None, **kwargs):
         """Select/click an item from the menu"""
         if text:
+            # Select an item based on the text of that item
             xpath = self.TEXT_MATCHING.format(txt=quote(text))
         elif self.VALID_ATTRS & set(kwargs.keys()):
+            # Select an item based on an attribute, if it is one of the VALID_ATTRS
             attr = (self.VALID_ATTRS & set(kwargs.keys())).pop()
             xpath = self.ATTR_MATCHING.format(attr=attr, txt=quote(kwargs[attr]))
         else:
+            # If neither text, nor one of the VALID_ATTRS is supplied, raise a KeyError
             raise KeyError(
                 'Either text or one of {} needs to be specified'.format(self.VALID_ATTRS))
         link = self.browser.element(xpath)
@@ -447,11 +450,33 @@ class BootstrapNav(Widget):
     def is_disabled(self, text=None, **kwargs):
         """Check if an item is disabled"""
         if text:
+            # Check if an item is disabled based on the text of that item
             xpath = self.TEXT_DISABLED.format(txt=quote(text))
         elif self.VALID_ATTRS & set(kwargs.keys()):
+            # Check if an item is disabled based on an attribute, if it is one of the VALID_ATTRS
             attr = (self.VALID_ATTRS & set(kwargs.keys())).pop()
             xpath = self.ATTR_DISABLED.format(attr=attr, txt=quote(kwargs[attr]))
         else:
+            # If neither text, nor one of the VALID_ATTRS is supplied, raise a KeyError
+            raise KeyError(
+                'Either text or one of {} needs to be specified'.format(self.VALID_ATTRS))
+        try:
+            self.browser.element(xpath)
+            return True
+        except NoSuchElementException:
+            return False
+
+    def has_item(self, text=None, **kwargs):
+        """Check if an item with this name or attributes exists"""
+        if text:
+            # Check if an item exists based on the text of that item
+            xpath = self.TEXT_MATCHING.format(txt=quote(text))
+        elif self.VALID_ATTRS & set(kwargs.keys()):
+            # Check if an item exists based on an attribute, if it is one of the VALID_ATTRS
+            attr = (self.VALID_ATTRS & set(kwargs.keys())).pop()
+            xpath = self.ATTR_MATCHING.format(attr=attr, txt=quote(kwargs[attr]))
+        else:
+            # If neither text, nor one of the VALID_ATTRS is supplied, raise a KeyError
             raise KeyError(
                 'Either text or one of {} needs to be specified'.format(self.VALID_ATTRS))
         try:
