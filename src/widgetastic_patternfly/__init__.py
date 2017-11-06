@@ -1202,6 +1202,17 @@ class BootstrapTreeview(Widget):
         self.browser.click(node)
         return node
 
+    def has_path(self, *path, **kwargs):
+        """Determine if the path exists in the tree.
+
+        See :py:meth:`expand_path` for more information about the arguments.
+        """
+        try:
+            self.expand_path(*path, **kwargs)
+            return True
+        except CandidateNotFound:
+            return False
+
     def read_contents(self, nodeid=None, include_images=False, collapse_after_read=False):
         """Reads the contents of the tree into a tree structure of strings and lists.
 
