@@ -103,7 +103,8 @@ class Button(Widget, ClickableMixin):
                 '@{}={}'.format(attr, quote(value)) for attr, value in kwargs.items())
 
         if classes:
-            self.locator_conditions += ' and '
+            if self.locator_conditions:
+                self.locator_conditions += ' and '
             self.locator_conditions += ' and '.join(
                 'contains(@class, {})'.format(quote(klass))
                 for klass in classes)
