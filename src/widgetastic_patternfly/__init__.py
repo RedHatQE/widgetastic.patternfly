@@ -1053,11 +1053,12 @@ class BootstrapTreeview(Widget):
         Returns:
             ``True`` if it was possible to expand the node, otherwise ``False``.
         """
-        self.logger.debug('Expanding node %s on tree %s', nodeid, self.tree_id)
         node = self.get_item_by_nodeid(nodeid)
         if not self.is_expandable(node):
+            self.logger.debug('Node %s not expandable on tree %s', nodeid, self.tree_id)
             return False
         if self.is_collapsed(node):
+            self.logger.debug('Expanding collapsed node %s on tree %s', nodeid, self.tree_id)
             arrow = self.get_expand_arrow(node)
             self.browser.click(arrow)
             time.sleep(0.1)
@@ -1067,6 +1068,8 @@ class BootstrapTreeview(Widget):
             wait_for(
                 lambda: self.is_expanded(self.get_item_by_nodeid(nodeid)),
                 delay=0.2, num_sec=10)
+        else:
+            self.logger.debug('Node %s already expanded on tree %s', nodeid, self.tree_id)
         return True
 
     def collapse_node(self, nodeid):
@@ -1078,17 +1081,20 @@ class BootstrapTreeview(Widget):
         Returns:
             ``True`` if it was possible to expand the node, otherwise ``False``.
         """
-        self.logger.debug('Collapsing node %s on tree %s', nodeid, self.tree_id)
         node = self.get_item_by_nodeid(nodeid)
         if not self.is_expandable(node):
+            self.logger.debug('Node %s not expandable on tree %s', nodeid, self.tree_id)
             return False
         if self.is_expanded(node):
+            self.logger.debug('Collapsing expanded node %s on tree %s', nodeid, self.tree_id)
             arrow = self.get_expand_arrow(node)
             self.browser.click(arrow)
             time.sleep(0.1)
             wait_for(
                 lambda: self.is_collapsed(self.get_item_by_nodeid(nodeid)),
                 delay=0.2, num_sec=10)
+        else:
+            self.logger.debug('Node %s already collapsed on tree %s', nodeid, self.tree_id)
         return True
 
     def _process_step(self, step):
@@ -1174,6 +1180,7 @@ class BootstrapTreeview(Widget):
             steps_tried = [step]
             image, step = self._process_step(step)
             path = path[1:]
+            self.logger.debug('Validating presence of %r as the root item of the tree', step)
             if not self.validate_node(node, step, image):
                 raise CandidateNotFound({
                     'message':
@@ -1186,6 +1193,7 @@ class BootstrapTreeview(Widget):
             steps_tried = []
         for step in path:
             steps_tried.append(step)
+            self.logger.debug('Expanding %r', steps_tried)
             image, step = self._process_step(step)
             if node is not None and not self.expand_node(self.get_nodeid(node)):
                 raise CandidateNotFound({
