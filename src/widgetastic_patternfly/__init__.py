@@ -756,7 +756,7 @@ class BootstrapSelect(Widget, ClickableMixin):
     Option = namedtuple("Option", ["text", "value"])
     LOCATOR_START = './/div[contains(@class, "bootstrap-select")]'
     ROOT = ParametrizedLocator('{@locator}')
-    BY_VISIBLE_TEXT = './div/ul/li/a[./span[contains(@class, "text") and normalize-space(.)={}]]'
+    BY_VISIBLE_TEXT = '//div/ul/li/a[./span[contains(@class, "text") and normalize-space(.)={}]]'
 
     def __init__(
             self, parent, id=None, name=None, locator=None, can_hide_on_select=False, logger=None):
@@ -813,6 +813,10 @@ class BootstrapSelect(Widget, ClickableMixin):
             self.logger.info('selecting by visible text: %r', text)
             try:
                 self.browser.click(self.BY_VISIBLE_TEXT.format(quote(text)), parent=self)
+            except NoSuchElementException:
+                # Added this as for some views(some tags pages) dropdown is separated from button
+                # and doesn't have exact id or name
+                self.browser.click(self.BY_VISIBLE_TEXT.format(quote(text)))
             except NoSuchElementException:
                 raise NoSuchElementException('Could not find {!r} in {!r}'.format(text, self))
         self.close()
