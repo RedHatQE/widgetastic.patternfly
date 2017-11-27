@@ -814,11 +814,12 @@ class BootstrapSelect(Widget, ClickableMixin):
             try:
                 self.browser.click(self.BY_VISIBLE_TEXT.format(quote(text)), parent=self)
             except NoSuchElementException:
-                # Added this as for some views(some tags pages) dropdown is separated from button
-                # and doesn't have exact id or name
-                self.browser.click(self.BY_VISIBLE_TEXT.format(quote(text)))
-            except NoSuchElementException:
-                raise NoSuchElementException('Could not find {!r} in {!r}'.format(text, self))
+                try:
+                    # Added this as for some views(some tags pages) dropdown is separated from
+                    # button and doesn't have exact id or name
+                    self.browser.click(self.BY_VISIBLE_TEXT.format(quote(text)))
+                except NoSuchElementException:
+                    raise NoSuchElementException('Could not find {!r} in {!r}'.format(text, self))
         self.close()
 
     @property
