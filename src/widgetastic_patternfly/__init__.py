@@ -928,10 +928,24 @@ class BootstrapTreeview(Widget):
         Returns:
             The name of the image without the hash, path and extension.
         """
-        image_node = self.browser.element('./span[contains(@class, "node-image")]', parent=item)
+        try:
+            image_node = self.browser.element('./span[contains(@class, "node-image")]', parent=item)
+        except NoSuchElementException:
+            self.logger.warning('No image tag found')
+            return None
         style = self.browser.get_attribute('style', image_node)
-        image_href = re.search(r'url\("([^"]+)"\)', style).groups()[0]
-        return re.search(r'/([^/]+)-[0-9a-f]+\.png$', image_href).groups()[0]
+        if style:
+            image_href = re.search(r'url\("([^"]+)"\)', style).groups()[0]
+            try:
+                return re.search(r'/([^/]+)-[0-9a-f]+\.png$', image_href).groups()[0]
+            except AttributeError:
+                return None
+        else:
+            classes = self.browser.classes(image_node)
+            try:
+                return [c for c in classes if c.startswith('fa-')][0]
+            except IndexError:
+                return None
 
     def read(self):
         return self.currently_selected
