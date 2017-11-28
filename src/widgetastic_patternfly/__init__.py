@@ -923,13 +923,15 @@ class BootstrapTreeview(Widget):
                     'not implement .tree_id!')
 
     def image_getter(self, item):
-        """Look up the image that is hidden in the style tag
+        """Look up the image that is hidden in the style tag or as a tag.
 
         Returns:
             The name of the image without the hash, path and extension.
         """
         try:
-            image_node = self.browser.element('./span[contains(@class, "node-image")]', parent=item)
+            image_node = self.browser.element(
+                './span[contains(@class, "node-image") or contains(@class, "node-icon")]',
+                parent=item)
         except NoSuchElementException:
             self.logger.warning('No image tag found')
             return None
