@@ -945,7 +945,7 @@ class BootstrapTreeview(Widget):
         else:
             classes = self.browser.classes(image_node)
             try:
-                return [c for c in classes if c.startswith('fa-')][0]
+                return [c for c in classes if c.startswith('fa-') or c.startswith('product-')][0]
             except IndexError:
                 return None
 
