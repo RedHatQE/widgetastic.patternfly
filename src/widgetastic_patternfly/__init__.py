@@ -756,7 +756,7 @@ class BootstrapSelect(Widget, ClickableMixin):
     Option = namedtuple("Option", ["text", "value"])
     LOCATOR_START = './/div[contains(@class, "bootstrap-select")]'
     ROOT = ParametrizedLocator('{@locator}')
-    BY_VISIBLE_TEXT = './/div/ul/li/a[./span[contains(@class, "text") and normalize-space(.)={}]]'
+    BY_VISIBLE_TEXT = '//div/ul/li/a[./span[contains(@class, "text") and normalize-space(.)={}]]'
     BY_PARTIAL_VISIBLE_TEXT = (
         './/div/ul/li/a[./span[contains(@class, "text") and contains(normalize-space(.), {})]]')
 
