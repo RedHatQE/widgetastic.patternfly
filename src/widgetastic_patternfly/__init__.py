@@ -959,13 +959,13 @@ class BootstrapTreeview(Widget):
         if style:
             image_href = re.search(r'url\("([^"]+)"\)', style).groups()[0]
             try:
-                return re.search(r'/([^/]+)-[0-9a-f]+\.png$', image_href).groups()[0]
+                return re.search(r'/([^/]+)-[0-9a-f]+\.(?:png|svg)$', image_href).groups()[0]
             except AttributeError:
                 return None
         else:
             classes = self.browser.classes(image_node)
             try:
-                return [c for c in classes if c.startswith('fa-') or c.startswith('product-')][0]
+                return [c for c in classes if c.startswith(('fa-', 'product-', 'vendor-'))][0]
             except IndexError:
                 return None
 
