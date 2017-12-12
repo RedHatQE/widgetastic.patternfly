@@ -211,36 +211,30 @@ class FlashMessages(Widget):
             else:
                 self.logger.info('%s: %r', message.type, message.text)
 
-    def assert_message(self, text, t=None):
+    def assert_message(self, text, t=None, partial=False):
+        log_part = 'partial match of' if partial else ''
         if t is not None:
-            self.logger.info('asserting the message %r of type %r is present', text, t)
+            self.logger.info('asserting %s the flash message %r of type %r', log_part, text, t)
         else:
-            self.logger.info('asserting the message %r is present', text)
-        for message in self.messages:
-            if message.text == text:
-                if t is not None:
-                    if message.type == t:
-                        return True
-                else:
+            self.logger.info('asserting %s the flash message %r', log_part, text)
+        all_messages = self.messages  # Store for logging on exception without querying twice
+        for message in all_messages:
+            if (partial and text in message.text) or (not partial and text == message.text):
+                if t is not None and message.type == t:
+                    return True
+                elif t is None:
                     return True
         else:
             if t is not None:
                 e_text = '{}: {}'.format(t, text)
             else:
                 e_text = text
-            raise AssertionError('assert_message: {}'.format(e_text))
+            raise AssertionError('assert {} message: {}. \n Available messages: {}'
+                                 .format(log_part, e_text, [msg.text for msg in all_messages]))
 
-    def assert_success_message(self, text, t=None):
+    def assert_success_message(self, text, t=None, partial=False):
         self.assert_no_error()
-        self.assert_message(text, 'success')
-
-    def assert_message_contains(self, msg_text):
-        for msg in view.flash.messages:
-            if msg_text in msg:
-                return True
-        else:
-            raise AssertionError('{} message not present'.format(msg_text))
-
+        self.assert_message(text, t='success', partial=partial)
 
     def __repr__(self):
         return '{}({!r})'.format(type(self).__name__, self.locator)
