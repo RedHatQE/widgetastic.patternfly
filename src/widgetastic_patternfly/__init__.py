@@ -234,6 +234,14 @@ class FlashMessages(Widget):
         self.assert_no_error()
         self.assert_message(text, 'success')
 
+    def assert_message_contains(self, msg_text):
+        for msg in view.flash.messages:
+            if msg_text in msg:
+                return True
+        else:
+            raise AssertionError('{} message not present'.format(msg_text))
+
+
     def __repr__(self):
         return '{}({!r})'.format(type(self).__name__, self.locator)
 
