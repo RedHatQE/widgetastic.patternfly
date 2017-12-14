@@ -1446,6 +1446,17 @@ class Dropdown(Widget):
         return [
             self.browser.text(el) for el in self.browser.elements(self.ITEMS_LOCATOR, parent=self)]
 
+    def has_item(self, item):
+        """Returns whether the items exists.
+
+        Args:
+            item: item name
+
+        Returns:
+            Boolean - True if enabled, False if not.
+        """
+        return item in self.items
+
     def item_element(self, item):
         """Returns a WebElement for given item name."""
         try:
