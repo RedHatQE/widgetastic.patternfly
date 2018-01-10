@@ -212,10 +212,14 @@ class FlashMessages(Widget):
                 self.logger.info('%s: %r', message.type, message.text)
 
     def assert_message(self, text, t=None, partial=False):
+<<<<<<< Updated upstream
         log_part = 'partial match of' if partial else ''
+=======
+>>>>>>> Stashed changes
         if t is not None:
             self.logger.info('asserting %s the flash message %r of type %r', log_part, text, t)
         else:
+<<<<<<< Updated upstream
             self.logger.info('asserting %s the flash message %r', log_part, text)
         all_messages = self.messages  # Store for logging on exception without querying twice
         for message in all_messages:
@@ -223,6 +227,22 @@ class FlashMessages(Widget):
                 if t is not None and message.type == t:
                     return True
                 elif t is None:
+=======
+            self.logger.info('asserting the message %r is present', text)
+        for message in self.messages:
+            if partial:
+                if text in message.text:
+                    if t is not None:
+                        if message.type == t:
+                            return True
+                    else:
+                        return True
+            elif message.text == text:
+                if t is not None:
+                    if message.type == t:
+                        return True
+                else:
+>>>>>>> Stashed changes
                     return True
         else:
             if t is not None:
@@ -234,7 +254,11 @@ class FlashMessages(Widget):
 
     def assert_success_message(self, text, t=None, partial=False):
         self.assert_no_error()
+<<<<<<< Updated upstream
         self.assert_message(text, t='success', partial=partial)
+=======
+        self.assert_message(text, 'success', partial=partial)
+>>>>>>> Stashed changes
 
     def __repr__(self):
         return '{}({!r})'.format(type(self).__name__, self.locator)
