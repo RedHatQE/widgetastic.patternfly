@@ -828,8 +828,13 @@ class BootstrapSelect(Widget, ClickableMixin):
                         self.browser.click(
                             self.BY_PARTIAL_VISIBLE_TEXT.format(quote(item)))
                     except NoSuchElementException:
-                        raise NoSuchElementException(
-                            'Could not find {!r} in {!r} using partial match'.format(item, self))
+                        try:
+                            # Added one more try to search for element not with relative path
+                            self.browser.click(self.BY_PARTIAL_VISIBLE_TEXT.format(quote(item))[1:])
+                        except NoSuchElementException:
+                            raise NoSuchElementException(
+                                'Could not find {!r} in {!r} using partial match'.format(
+                                    item, self))
             else:
                 self.logger.info('selecting by visible text: %r', item)
                 try:
