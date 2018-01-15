@@ -760,7 +760,7 @@ class BootstrapSelect(Widget, ClickableMixin):
     ROOT = ParametrizedLocator('{@locator}')
     BY_VISIBLE_TEXT = '//div/ul/li/a[./span[contains(@class, "text") and normalize-space(.)={}]]'
     BY_PARTIAL_VISIBLE_TEXT = (
-        './/div/ul/li/a[./span[contains(@class, "text") and contains(normalize-space(.), {})]]')
+        '//div/ul/li/a[./span[contains(@class, "text") and contains(normalize-space(.), {})]]')
 
     def __init__(
             self, parent, id=None, name=None, locator=None, can_hide_on_select=False, logger=None):
