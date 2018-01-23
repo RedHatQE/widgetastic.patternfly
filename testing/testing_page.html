@@ -10,10 +10,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.23.1/css/patternfly.min.css" integrity="sha256-nNGxuG8p95S3RD1u5ABAy7lSfcf3gCQ9wNI5Q51lNB4=" crossorigin="anonymous" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.23.1/css/patternfly-additions.css" integrity="sha256-JqQqupyMtGoBG/dyh3e8DjpScJ6G1iSCbqQTpPkKtjQ=" crossorigin="anonymous" />
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js" integrity="sha256-3Jy/GbSLrg0o9y5Z5n1uw0qxZECH7C6OQpVBgNFYa0g=" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.23.1/js/patternfly.min.js" integrity="sha256-XI7ZZ/YpLWmMS6Kg6lkpgWT9sj1KC1DAq8Aw358n0zU=" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-treeview/1.2.0/bootstrap-treeview.min.css" integrity="sha256-ULjuiZ9iqqf97EETp/mZrnLusfOwISiI6AIL0IXShbc=" crossorigin="anonymous" />
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js" integrity="sha256-3Jy/GbSLrg0o9y5Z5n1uw0qxZECH7C6OQpVBgNFYa0g=" crossorigin="anonymous" ></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous" ></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous" ></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.23.1/js/patternfly.min.js" integrity="sha256-XI7ZZ/YpLWmMS6Kg6lkpgWT9sj1KC1DAq8Aw358n0zU=" crossorigin="anonymous" ></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-treeview/1.2.0/bootstrap-treeview.min.js" integrity="sha256-rmZZb5ESAjCE4Al5RfENzQBpw1VbShzLes76aW8c+kc=" crossorigin="anonymous"  ></script>
   <title>Patternfly testing page</title>
 </head>
 <body>
@@ -63,7 +65,110 @@
       </div>
     </div>
   </div>
-  </div>
+
+  <!-- Patternfly Bootstrap Treeview reference -->
+  <!-- {
+      text: "Node 1",
+      icon: "glyphicon glyphicon-stop",
+      image: "something.png",
+      selectedIcon: "glyphicon glyphicon-stop",
+      color: "#000000",
+      backColor: "#FFFFFF",
+      iconColor: "#FFFFFF",
+      selectable: true,
+      checkable: true,
+      state: {
+        checked: true,
+        disabled: true,
+        expanded: true,
+        selected: true
+      },
+      tags: [
+        'available',
+        {text:'not available', class:'disabled'}
+      ],
+      dataAttr: {
+        target: '#tree'
+      }
+      id: 'something',
+      class: 'special extraordinary',
+      hideCheckbox: true,
+      nodes: [
+        {},
+        ...
+      ]
+    }
+  -->
+  <div id="test-tree"></div>
+    <!-- TODO the parent nodes have checkboxes in this tree, couldn't hide with hideCheckbox attr -->
+    <!-- [Parent 2, Child A] node is selected by default for node_checked testing -->
+  <script>
+    $(function() {
+      var defaultData = [
+        {
+          text: 'Parent 1',
+          href: '#parent1',
+          tags: ['4'],
+          nodes: [
+            {
+              text: 'Child 1',
+              href: '#child1',
+              icon: 'fa fa-file-o',
+              tags: ['2'],
+              nodes: [
+                {
+                  text: 'Grandchild 1',
+                  href: '#grandchild1',
+                  icon: 'fa fa-file-o',
+                  tags: ['0'],
+                },
+                {
+                  text: 'Grandchild 2',
+                  href: '#grandchild2',
+                  icon: 'fa fa-file-o',
+                  tags: ['0']
+                }
+              ]
+            },
+            {
+              text: 'Child 2',
+              href: '#child2',
+              icon: 'fa fa-file-o',
+              tags: ['0'],
+            }
+          ]
+        },
+        {
+          text: 'Parent 2',
+          href: '#parent2',
+          tags: ['0'],
+          nodes: [
+                {
+                  text: 'Child A',
+                  href: '#childA',
+                  icon: 'fa fa-file-o',
+                  tags: ['0'],
+                  state: {
+                    checked: true,
+                    expanded: true,
+                  }
+                }
+          ]
+       }
+      ];
+      $('#test-tree').treeview({
+        collapseIcon: "fa fa-angle-down",
+        data: defaultData,
+        expandIcon: "fa fa-angle-right",
+        nodeIcon: "fa fa-folder",
+        showBorder: false,
+        checkboxes: true,
+        showCheckbox: true,
+        hierarchical_check: false
+      });
+    });
+  </script>
+</div>
 
 
 
