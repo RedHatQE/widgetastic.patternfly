@@ -1346,6 +1346,9 @@ class CheckableBootstrapTreeview(BootstrapTreeview):
     IS_CHECKABLE = './span[contains(@class, "check-icon")]'
     IS_CHECKED = './span[contains(@class, "check-icon") and contains(@class, "fa-check-square-o")]'
 
+    CheckNode = namedtuple('CheckNode', ['path'])
+    UncheckNode = namedtuple('UncheckNode', ['path'])
+
     def is_checkable(self, item):
         return bool(self.browser.elements(self.IS_CHECKABLE, parent=item))
 
@@ -1361,6 +1364,9 @@ class CheckableBootstrapTreeview(BootstrapTreeview):
         if checked != check:
             self.logger.info('%s %r', 'Checking' if check else 'Unchecking', path[-1])
             self.browser.click(self.IS_CHECKABLE, parent=leaf)
+            return True
+        else:
+            return False
 
     def check_node(self, *path, **kwargs):
         """Expands the passed path and checks a checkbox that is located at the node."""
@@ -1377,12 +1383,17 @@ class CheckableBootstrapTreeview(BootstrapTreeview):
             return False
         return self.is_checked(leaf)
 
-    def fill(self, path):
-        if self.node_checked(*path):
-            return False
-        else:
-            self.check_node(*path)
-            return True
+    def fill(self, node):
+        """
+        Args:
+            node: CheckNode/UncheckNode namedtuple with path
+
+        Returns:
+            boolean for whether or not the path changed
+        """
+        if not isinstance(node, (self.CheckNode, self.UncheckNode)):
+            raise ValueError('node in must be CheckNode or UncheckNode namedtuple')
+        return self.check_uncheck_node(isinstance(node, self.CheckNode), *node.path)
 
     def read(self):
         do_not_read_this_widget()
