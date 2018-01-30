@@ -22,7 +22,7 @@ class CustomBrowser(Browser):
 
 @pytest.fixture(scope='session')
 def selenium(request):
-    driver = webdriver.PhantomJS()
+    driver = webdriver.Chrome()
     request.addfinalizer(driver.quit)
     driver.maximize_window()
     global selenium_browser

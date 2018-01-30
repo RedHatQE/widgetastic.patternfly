@@ -12,10 +12,6 @@ widgetastic.patternfly
     :target: http://widgetasticpatternfly.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-.. image:: https://www.quantifiedcode.com/api/v1/project/a13ed499c97547598b1507ae7f5c5f47/badge.svg
-  :target: https://www.quantifiedcode.com/app/project/a13ed499c97547598b1507ae7f5c5f47
-  :alt: Code issues
-
 Patternfly_ widget library for Widgetastic_.
 
 .. _Patternfly: http://www.patternfly.org
@@ -37,9 +33,12 @@ Usage
 
 .. code-block:: python
 
+    from widgetastic.widget import View
     from widgetastic_patternfly import Button
 
     class SomeView(View):
         add = Button('Add', classes=[Button.PRIMARY])
 
 Check the ``src/widgetastic_patternfly/__init__.py`` for more documentation.
+
+Currently all the PatternFly widgets are located in the ``widgetastic_patternfly`` package.
