@@ -9,7 +9,7 @@ from cached_property import cached_property
 from collections import namedtuple
 
 from widgetastic.exceptions import NoSuchElementException, UnexpectedAlertPresentException, \
-    WidgetOperationFailed
+    WidgetOperationFailed, StaleElementReferenceException
 from widgetastic.log import call_sig
 from widgetastic.utils import ParametrizedLocator, VersionPick, partial_match
 from widgetastic.widget import BaseInput, ClickableMixin, TextInput, Text, Widget, View, \
@@ -780,7 +780,12 @@ class BootstrapSelect(Widget, ClickableMixin):
 
     @property
     def is_open(self):
-        return 'open' in self.browser.classes(self)
+        try:
+            return 'open' in self.browser.classes(self)
+        except StaleElementReferenceException:
+            self.logger.warning(
+                'Got a StaleElementReferenceException in .is_open, but ignoring. Returned False.')
+            return False
 
     @property
     def is_multiple(self):
