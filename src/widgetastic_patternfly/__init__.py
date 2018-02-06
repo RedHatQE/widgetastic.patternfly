@@ -46,6 +46,22 @@ class DropdownItemNotFound(Exception):
     pass
 
 
+class SelectItemNotFound(Exception):
+    def __init__(self, widget, item, options=None):
+        self.widget = widget
+        self.item = item
+        self.options = options
+
+    @property
+    def message(self):
+        return ('Could not find {!r} in {!r}\n'
+                'These options are present: {!r}'
+                .format(self.item, self.widget, ', '.join(self.options)))
+
+    def __str__(self):
+        return self.message
+
+
 class Button(Widget, ClickableMixin):
     """A PatternFly/Bootstrap button
 
@@ -833,8 +849,8 @@ class BootstrapSelect(Widget, ClickableMixin):
                         self.browser.click(
                             self.BY_PARTIAL_VISIBLE_TEXT.format(quote(item)))
                     except NoSuchElementException:
-                        raise NoSuchElementException(
-                            'Could not find {!r} in {!r} using partial match'.format(item, self))
+                        raise SelectItemNotFound(widget=self, item=item,
+                                                 options=[opt.text for opt in self.all_options])
             else:
                 self.logger.info('selecting by visible text: %r', item)
                 try:
@@ -845,8 +861,8 @@ class BootstrapSelect(Widget, ClickableMixin):
                         # button and doesn't have exact id or name
                         self.browser.click(self.BY_VISIBLE_TEXT.format(quote(item)))
                     except NoSuchElementException:
-                        raise NoSuchElementException(
-                            'Could not find {!r} in {!r}'.format(item, self))
+                        raise SelectItemNotFound(widget=self, item=item,
+                                                 options=[opt.text for opt in self.all_options])
         self.close()
 
     @property
@@ -1514,7 +1530,9 @@ class Dropdown(Widget):
             self.open()
             if not self.item_enabled(item):
                 raise DropdownItemDisabled(
-                    'Item "{}" of dropdown "{}" is disabled'.format(item, self.text))
+                    'Item "{}" of dropdown "{}" is disabled\n'
+                    'The following items are available: {}'
+                    .format(item, self.text, ';'.join(self.items)))
             self.browser.click(self.item_element(item), ignore_ajax=handle_alert is not None)
             if handle_alert is not None:
                 self.browser.handle_alert(cancel=not handle_alert, wait=10.0)
