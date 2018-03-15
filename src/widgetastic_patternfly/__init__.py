@@ -616,26 +616,33 @@ class VerticalNavigation(Widget):
         return '{}({!r})'.format(type(self).__name__, self.locator)
 
 
-class Tab(View, ClickableMixin):
+class Tab(View):
     """Represents the Tab widget.
 
     Selects itself automatically when any child widget gets accessed, ensuring that the widget is
     visible.
+
+    You can specify your own ``ROOT`` attribute on the class.
     """
+    #: The text on the tab. If it is the same as the tab class name capitalized, can be omitted
     TAB_NAME = None
-    INDIRECT = True
-    ROOT = ParametrizedLocator(
-        './/ul[contains(@class, "nav-tabs")]/li[normalize-space(.)={@tab_name|quote}]')
+
+    #: Locator of the Tab selector
+    TAB_LOCATOR = ParametrizedLocator(
+        './/ul[contains(@class, "nav-tabs")]/li[./a[normalize-space(.)={@tab_name|quote}]]')
 
     @property
     def tab_name(self):
         return self.TAB_NAME or type(self).__name__.capitalize()
 
     def is_active(self):
-        return 'active' in self.browser.classes(self)
+        return 'active' in self.parent_browser.classes(self.TAB_LOCATOR)
 
     def is_disabled(self):
-        return 'disabled' in self.browser.classes(self)
+        return 'disabled' in self.parent_browser.classes(self.TAB_LOCATOR)
+
+    def click(self):
+        return self.parent_browser.click(self.TAB_LOCATOR)
 
     def select(self):
         if not self.is_active():
@@ -651,6 +658,61 @@ class Tab(View, ClickableMixin):
 
     def __repr__(self):
         return '<Tab {!r}>'.format(self.tab_name)
+
+
+class GenericTabWithDropdown(Tab):
+    """Tab with a dropdown. Variant that always takes the sub item name in the select().
+
+    Does not support automatic reveal of the tab upon access as the default dropdown item is not
+    specified.
+    """
+    def is_dropdown(self):
+        return 'dropdown' in self.parent_browser.classes(self.TAB_LOCATOR)
+
+    def is_open(self):
+        return 'open' in self.parent_browser.classes(self.TAB_LOCATOR)
+
+    def open(self):
+        if not self.is_open():
+            self.logger.info('opened the tab %s', self.tab_name)
+            self.click()
+
+    def close(self):
+        if self.is_open():
+            self.logger.info('closed the tab %s', self.tab_name)
+            self.click()
+
+    def select(self, sub_item):
+        if not self.is_dropdown():
+            raise TypeError('{} is not a tab with dropdown and CHECK_IF_DROPDOWN is True')
+        self.open()
+        parent = self.parent_browser.element(self.TAB_LOCATOR)
+        self.logger.info('clicking the sub-item %r', sub_item)
+        self.parent_browser.click(
+            './ul/li[normalize-space(.)={}]'.format(quote(sub_item)),
+            parent=parent)
+
+    def child_widget_accessed(self, widget):
+        """Nothing. Since we don't know which sub_item."""
+
+    def __repr__(self):
+        return '<TabWithDropdown {!r}>'.format(self.tab_name)
+
+
+class TabWithDropdown(GenericTabWithDropdown):
+    """Tab with the dropdown and its selection item set so child_widget_accessed work as usual."""
+    #: Specify the dropdown item here
+    SUB_ITEM = None
+
+    def select(self):
+        return super(TabWithDropdown, self).select(self.SUB_ITEM)
+
+    def child_widget_accessed(self, widget):
+        # Redefine it back like in Tab since TabWithDropdown removes it
+        self.select()
+
+    def __repr__(self):
+        return '<TabWithDropdownDefault {!r}>'.format(self.tab_name)
 
 
 class Accordion(View, ClickableMixin):
