@@ -426,6 +426,7 @@ class BootstrapNav(Widget):
     ROOT = ParametrizedLocator('{@locator}')
     CURRENTLY_SELECTED = './/li[contains(@class, "active")]/a'
     TEXT_MATCHING = './/li/a[text()={txt}]'
+    PARTIAL_TEXT = './/li/a[contains(normalize-space(.), {txt})]'
     ATTR_MATCHING = './/li/a[@{attr}={txt}]'
     TEXT_DISABLED = './/li[contains(@class, "disabled")]/a[text()={txt}]'
     ATTR_DISABLED = './/li[contains(@class, "disabled")]/a[@{attr}={txt}]'
@@ -454,16 +455,19 @@ class BootstrapNav(Widget):
         """Select/click an item from the menu"""
         if text:
             # Select an item based on the text of that item
-            xpath = self.TEXT_MATCHING.format(txt=quote(text))
+            try:
+                link = self.browser.element(self.TEXT_MATCHING.format(txt=quote(text)))
+            except NoSuchElementException:
+                link = self.browser.element(self.PARTIAL_TEXT.format(txt=quote(text)))
         elif self.VALID_ATTRS & set(kwargs.keys()):
             # Select an item based on an attribute, if it is one of the VALID_ATTRS
             attr = (self.VALID_ATTRS & set(kwargs.keys())).pop()
-            xpath = self.ATTR_MATCHING.format(attr=attr, txt=quote(kwargs[attr]))
+            link = self.browser.element(
+                self.ATTR_MATCHING.format(attr=attr, txt=quote(kwargs[attr])))
         else:
             # If neither text, nor one of the VALID_ATTRS is supplied, raise a KeyError
             raise KeyError(
                 'Either text or one of {} needs to be specified'.format(self.VALID_ATTRS))
-        link = self.browser.element(xpath)
         self.browser.click(link)
 
     def is_disabled(self, text=None, **kwargs):
