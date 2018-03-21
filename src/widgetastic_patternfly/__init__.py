@@ -452,13 +452,22 @@ class BootstrapNav(Widget):
         return self.currently_selected
 
     def select(self, text=None, **kwargs):
-        """Select/click an item from the menu"""
+        """
+            Select/click an item from the menu
+
+            Args:
+                text: text of the link to be selected, If you want to partial text match,
+                 use the :py:class:`BootstrapNav.partial` to wrap the value.
+        """
         if text:
             # Select an item based on the text of that item
-            try:
-                link = self.browser.element(self.TEXT_MATCHING.format(txt=quote(text)))
-            except NoSuchElementException:
+            if isinstance(text, partial_match):
+                text = text.item
                 link = self.browser.element(self.PARTIAL_TEXT.format(txt=quote(text)))
+                self.logger.info('selecting by partial matching text: %r', text)
+            else:
+                link = self.browser.element(self.TEXT_MATCHING.format(txt=quote(text)))
+                self.logger.info('selecting by full matching text: %r', text)
         elif self.VALID_ATTRS & set(kwargs.keys()):
             # Select an item based on an attribute, if it is one of the VALID_ATTRS
             attr = (self.VALID_ATTRS & set(kwargs.keys())).pop()
