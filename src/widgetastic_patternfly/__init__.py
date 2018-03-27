@@ -670,6 +670,10 @@ class Tab(View):
     def is_disabled(self):
         return 'disabled' in self.parent_browser.classes(self.TAB_LOCATOR)
 
+    @property
+    def is_displayed(self):
+        return self.parent_browser.is_displayed(self.TAB_LOCATOR)
+
     def click(self):
         return self.parent_browser.click(self.TAB_LOCATOR)
 
