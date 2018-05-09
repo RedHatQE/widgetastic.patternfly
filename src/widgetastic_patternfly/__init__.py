@@ -7,6 +7,7 @@ import six
 import time
 from cached_property import cached_property
 from collections import namedtuple
+from datetime import datetime
 
 from widgetastic.exceptions import NoSuchElementException, UnexpectedAlertPresentException, \
     WidgetOperationFailed, StaleElementReferenceException
@@ -1804,3 +1805,118 @@ class AboutModal(Widget):
             # value will include the label from the <strong> block, parse it out
             items.update({key: element_text.replace(key, '', 1).lstrip()})
         return items
+
+
+class DatePicker(Widget):
+    """Represents the Patternfly/Bootstrap DatePicker.
+    It helps to select a date for the read-only box as well as fill date for the read-write box.
+
+      Args:
+        name: name of DatePicker
+        id: id of DatePicker
+
+    .. code-block:: python
+
+       date = DatePicker(name='miq_date_1')
+    """
+    ROOT = ParametrizedLocator(".//*[contains(@class, 'datepicker-dropdown')]")
+    TEXT_BOX = ".//*[@name='{name}' or @id='{id}']"
+    DATE = ".//*[contains(@class, 'datepicker-days')]/table/tbody/tr/*"
+    MONTH = ".//*[contains(@class, 'datepicker-months')]/table/tbody/tr/td/*"
+    YEAR = ".//*[contains(@class, 'datepicker-years')]/table/tbody/tr/td/*"
+    PREV = ".//*[contains(@class, 'prev')]"
+    NEXT = ".//*[contains(@class, 'next')]"
+    DATE_PICKER_SWITH = ".//*[contains(@class, 'datepicker-switch')]"
+
+    def __init__(self, parent, name=None, id=None, logger=None):
+        """Create the widget"""
+        Widget.__init__(self, parent, logger=logger)
+        self.name = name
+        self.id = id
+        self.TEXT_BOX = self.TEXT_BOX.format(name=name, id=id)
+
+    @property
+    def value(self):
+        return self.parent_browser.get_attribute('value', self.TEXT_BOX)
+
+    @property
+    def date_switch_value(self):
+        return self.browser.get_attribute('textContent', self.DATE_PICKER_SWITH)
+
+    def _select_date(self, dd):
+        for el in self.browser.elements(self.DATE):
+            if (not bool({'old', 'new'} & self.browser.classes(el))) and (int(el.text) == int(dd)):
+                el.click()
+                return True
+
+    def _select_month(self, month):
+        for el in self.browser.elements(self.MONTH):
+            if el.text == month:
+                el.click()
+                return True
+
+    def _select_year(self, year):
+        for yr in range(1, 10):
+            start_yr, end_yr = [int(item) for item in self.date_switch_value.split('-')]
+            if start_yr <= int(year) <= end_yr:
+                for el in self.browser.elements(self.YEAR):
+                    if int(el.text) == int(year):
+                        el.click()
+                        return True
+            elif int(year) < start_yr:
+                self.browser.click(self.PREV)
+            elif int(year) > end_yr:
+                self.browser.click(self.NEXT)
+        else:
+            raise ValueError("Year not valid")
+
+    def read(self):
+        return self.value
+
+    def select(self, date):
+        """select date
+
+        Args:
+            date: date in `mm/dd/yyyy` format
+        Returns:
+            :py:class:`bool`
+        """
+        if date == self.value:
+            return False
+
+        self.parent_browser.click(self.TEXT_BOX)
+        date = datetime.strptime(date, "%m/%d/%Y")
+        month = date.strftime("%b")
+        day = date.strftime("%d")
+        year = date.strftime("%Y")
+        sw_value = self.date_switch_value.split(' ')
+
+        if (date.strftime("%B") not in sw_value) or (year not in sw_value):
+            self.browser.click(self.DATE_PICKER_SWITH)
+            if year not in self.date_switch_value:
+                self.browser.click(self.DATE_PICKER_SWITH)
+                self._select_year(year)
+            self._select_month(month)
+        self._select_date(day)
+        return True
+
+    def fill(self, date):
+        """Fill date to date box
+        This method usefull for read-write date box
+
+        Args:
+            date: date in respective format
+        Returns:
+            :py:class:`bool`
+        """
+        if date == self.value:
+            return False
+
+        self.parent_browser.click(self.TEXT_BOX)
+        self.parent_browser.clear(self.TEXT_BOX)
+        self.parent_browser.send_keys(date, self.TEXT_BOX)
+        return True
+
+    @property
+    def is_displayed(self):
+        return self.parent_browser.is_displayed(self.TEXT_BOX)
