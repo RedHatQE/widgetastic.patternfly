@@ -1808,7 +1808,7 @@ class AboutModal(Widget):
 
 
 class DatePicker(Widget):
-    """Represents the Patternfly/Bootstrap DatePicker.
+    """Represents the Bootstrap DatePicker.
     It helps to select a date for the read-only box as well as fill date for the read-write box.
 
       Args:
@@ -1913,10 +1913,22 @@ class DatePicker(Widget):
             return False
 
         self.parent_browser.click(self.TEXT_BOX)
-        self.parent_browser.clear(self.TEXT_BOX)
-        self.parent_browser.send_keys(date, self.TEXT_BOX)
-        return True
+
+        if not self.is_readonly:
+            self.parent_browser.clear(self.TEXT_BOX)
+            self.parent_browser.send_keys(date, self.TEXT_BOX)
+            return True
+        else:
+            raise ValueError("readonly datepicker not fillable")
 
     @property
     def is_displayed(self):
         return self.parent_browser.is_displayed(self.TEXT_BOX)
+
+    @property
+    def is_readonly(self):
+        return bool(self.parent_browser.get_attribute('readonly', self.TEXT_BOX))
+
+    @property
+    def date_format(self):
+        return self.parent_browser.get_attribute('data-date-format', self.TEXT_BOX)
