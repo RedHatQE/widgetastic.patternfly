@@ -1809,7 +1809,6 @@ class AboutModal(Widget):
 
 class DatePicker(Widget):
     """Represents the Bootstrap DatePicker.
-    It helps to select a date for the read-only box as well as fill date for the read-write box.
 
       Args:
         name: name of DatePicker
@@ -1902,7 +1901,6 @@ class DatePicker(Widget):
 
     def fill(self, date):
         """Fill date to date box
-        This method usefull for read-write date box
 
         Args:
             date: date in respective format
@@ -1919,7 +1917,7 @@ class DatePicker(Widget):
             self.parent_browser.send_keys(date, self.TEXT_BOX)
             return True
         else:
-            raise ValueError("readonly datepicker not fillable")
+            return self.select(date)
 
     @property
     def is_displayed(self):
