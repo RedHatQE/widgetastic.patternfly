@@ -444,8 +444,7 @@ class BootstrapNav(Widget):
     @property
     def currently_selected(self):
         """A property to return the currently selected menu item"""
-        return [self.browser.text(el)
-            for el in self.browser.elements(self.CURRENTLY_SELECTED)]
+        return [self.browser.text(el) for el in self.browser.elements(self.CURRENTLY_SELECTED)]
 
     def read(self):
         """Implement read()"""
@@ -1739,8 +1738,8 @@ class BootstrapSwitch(BaseInput):
         else:
             self.browser.click(self._clickable_el)
             if self.selected != value:
-                raise WidgetOperationFailed('Failed to set the bootstrap switch to'
-                    ' requested value.')
+                raise WidgetOperationFailed(
+                    'Failed to set the bootstrap switch to requested value.')
             return True
 
     def read(self):
