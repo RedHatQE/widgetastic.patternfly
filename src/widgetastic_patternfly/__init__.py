@@ -1826,6 +1826,7 @@ class DatePicker(Widget):
     PREV = ".//*[contains(@class, 'prev')]"
     NEXT = ".//*[contains(@class, 'next')]"
     DATE_PICKER_SWITH = ".//*[contains(@class, 'datepicker-switch')]"
+    DATE_MAPPING = {'dd': '%d', 'mm': '%m', 'MM': '%B', 'yy': '%y', 'yyyy': '%Y'}
 
     def __init__(self, parent, name=None, id=None, logger=None):
         """Create the widget"""
@@ -1876,15 +1877,12 @@ class DatePicker(Widget):
         """select date
 
         Args:
-            date: date in `mm/dd/yyyy` format
+            date (dict): date in `dict` format with keys `day`, `month`, `year`
         Returns:
             :py:class:`bool`
         """
-        if date == self.value:
-            return False
-
         self.parent_browser.click(self.TEXT_BOX)
-        date = datetime.strptime(date, "%m/%d/%Y")
+        date = datetime(date['year'], date['month'], date['day'])
         month = date.strftime("%b")
         day = date.strftime("%d")
         year = date.strftime("%Y")
@@ -1899,25 +1897,39 @@ class DatePicker(Widget):
         self._select_date(day)
         return True
 
-    def fill(self, date):
+    def fill(self, value):
         """Fill date to date box
 
         Args:
-            date: date in respective format
+           value (str/ dict): date in `dict` format having keys `day`, `month`, `year` or
+           date in `str` format `dd/mm/yyyy`
         Returns:
             :py:class:`bool`
         """
+        date_mapp = self.date_format
+        for item in self.date_format.split('/'):
+            date_mapp = date_mapp.replace(item, self.DATE_MAPPING[item])
+
+        if isinstance(value, str):
+            date_obj = datetime.strptime(value, "%m/%d/%Y")
+        elif isinstance(value, dict):
+            date_obj = datetime(value['year'], value['month'], value['day'])
+        else:
+            ValueError("Value should be in string (dd/mm/yyyy) or \
+            dictionary having keys day, month, year")
+
+        date = datetime.strftime(date_obj, date_mapp)
+
         if date == self.value:
             return False
-
-        self.parent_browser.click(self.TEXT_BOX)
 
         if not self.is_readonly:
             self.parent_browser.clear(self.TEXT_BOX)
             self.parent_browser.send_keys(date, self.TEXT_BOX)
             return True
         else:
-            return self.select(date)
+            return self.select(
+                {'day': date_obj.day, 'month': date_obj.month, 'year': date_obj.year})
 
     @property
     def is_displayed(self):
