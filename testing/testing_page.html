@@ -66,6 +66,67 @@
   </div>
 
 
+<!--------------------------------- Bootstrap-Datepicker----------------------------------------->
+<!-- Special version of Bootstrap that only affects content wrapped in .bootstrap-iso -->
+<link rel="stylesheet" href="https://formden.com/static/cdn/bootstrap-iso12.css" /> 
 
+<!-- Inline CSS based on choices in "Settings" tab -->
+<style>.bootstrap-iso .formden_header h2, .bootstrap-iso .formden_header p, .bootstrap-iso form{font-family: Arial, Helvetica, sans-serif; color: black}.bootstrap-iso form button, .bootstrap-iso form button:hover{color: white !important;} .asteriskField{color: red;}</style>
+
+<!-- HTML Form (wrapped in a .bootstrap-iso div) -->
+<div class="bootstrap-iso">
+ <div class="container-fluid">
+  <div class="row">
+   <div class="col-md-6 col-sm-6 col-xs-12">
+    <form method="post">
+     <div class="form-group form-group-sm">
+      <label class="control-label " for="date_readonly">
+       Bootstrap datepicker readonly
+      </label>
+      <input class="form-control" id="date_readonly" name="date_readonly" readonly="readonly" autoclose="true" placeholder="MM/DD/YYYY" data-date-format="mm/dd/yyyy" type="text"/>
+     </div>
+     <div class="form-group form-group-sm">
+      <label class="control-label " for="date_readwrite">
+       Bootstrap datepicker readwrite
+      </label>
+      <input class="form-control" id="date_readwrite" name="date_readwrite" autoclose="true" placeholder="MM/DD/YYYY" data-date-format="mm/dd/yyyy" type="text"/>
+     </div>
+    </form>
+   </div>
+  </div>
+ </div>
+</div>
+
+
+<!-- Extra JavaScript/CSS added manually in "Settings" tab -->
+<!-- Include jQuery -->
+<script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+
+<!-- Include Date Range Picker -->
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/css/bootstrap-datepicker3.css"/>
+
+<script>
+    $(document).ready(function(){
+        var date_in_readonly=$('input[name="date_readonly"]');
+        var date_in_readwrite=$('input[name="date_readwrite"]');
+ //our date input has the name "date"
+        var container=$('.bootstrap-iso form').length>0 ? $('.bootstrap-iso form').parent() : "body";
+        date_in_readonly.datepicker({
+            format: 'mm/dd/yyyy',
+            container: container,
+            todayHighlight: true,
+            autoclose: true,
+        })
+        date_in_readwrite.datepicker({
+            format: 'mm/dd/yyyy',
+            container: container,
+            todayHighlight: true,
+            autoclose: true,
+        })
+
+    })
+</script>
+<!--------------------------------- Bootstrap-Datepicker End ------------------------------------>
 </body>
 </html>

@@ -1819,13 +1819,13 @@ class DatePicker(Widget):
        date = DatePicker(name='miq_date_1')
     """
     ROOT = ParametrizedLocator(".//*[contains(@class, 'datepicker-dropdown')]")
-    TEXT_BOX = ".//*[@name='{name}' or @id='{id}']"
+    TEXTBOX = ParametrizedLocator(".//*[@name='{@name}' or @id='{@id}']")
     DATE = ".//*[contains(@class, 'datepicker-days')]/table/tbody/tr/*"
     MONTH = ".//*[contains(@class, 'datepicker-months')]/table/tbody/tr/td/*"
     YEAR = ".//*[contains(@class, 'datepicker-years')]/table/tbody/tr/td/*"
     PREV = ".//*[contains(@class, 'prev')]"
     NEXT = ".//*[contains(@class, 'next')]"
-    DATE_PICKER_SWITH = ".//*[contains(@class, 'datepicker-switch')]"
+    DATE_PICKER_SWITCH = ".//*[contains(@class, 'datepicker-switch')]"
     DATE_MAPPING = {'dd': '%d', 'mm': '%m', 'MM': '%B', 'yy': '%y', 'yyyy': '%Y'}
 
     def __init__(self, parent, name=None, id=None, logger=None):
@@ -1833,15 +1833,20 @@ class DatePicker(Widget):
         Widget.__init__(self, parent, logger=logger)
         self.name = name
         self.id = id
-        self.TEXT_BOX = self.TEXT_BOX.format(name=name, id=id)
 
     @property
     def value(self):
-        return self.parent_browser.get_attribute('value', self.TEXT_BOX)
+        return self.parent_browser.get_attribute('value', self.TEXTBOX)
 
     @property
     def date_switch_value(self):
-        return self.browser.get_attribute('textContent', self.DATE_PICKER_SWITH)
+        return self.browser.get_attribute('textContent', self.DATE_PICKER_SWITCH)
+
+    @property
+    def _active_date(self):
+        for el in self.browser.elements(self.DATE):
+            if bool(self.browser.classes(el) & {'active'}):
+                return el
 
     def _select_date(self, dd):
         for el in self.browser.elements(self.DATE):
@@ -1870,75 +1875,80 @@ class DatePicker(Widget):
         else:
             raise ValueError("Year not valid")
 
-    def read(self):
-        return self.value
+    @property
+    def date_mapp(self):
+        date_fmt = self.date_format
+        for item in self.date_format.split('/'):
+            date_fmt = date_fmt.replace(item, self.DATE_MAPPING[item])
+        return date_fmt
 
-    def select(self, date):
-        """select date
-
-        Args:
-            date (dict): date in `dict` format with keys `day`, `month`, `year`
-        Returns:
-            :py:class:`bool`
-        """
-        self.parent_browser.click(self.TEXT_BOX)
-        date = datetime(date['year'], date['month'], date['day'])
-        month = date.strftime("%b")
-        day = date.strftime("%d")
-        year = date.strftime("%Y")
+    def _select(self, value):
+        self.parent_browser.click(self.TEXTBOX)
+        month = value.strftime("%b")
+        day = value.strftime("%d")
+        year = value.strftime("%Y")
         sw_value = self.date_switch_value.split(' ')
 
-        if (date.strftime("%B") not in sw_value) or (year not in sw_value):
-            self.browser.click(self.DATE_PICKER_SWITH)
+        if (value.strftime("%B") not in sw_value) or (year not in sw_value):
+            self.browser.click(self.DATE_PICKER_SWITCH)
             if year not in self.date_switch_value:
-                self.browser.click(self.DATE_PICKER_SWITH)
+                self.browser.click(self.DATE_PICKER_SWITCH)
                 self._select_year(year)
             self._select_month(month)
         self._select_date(day)
         return True
 
+    def read(self):
+        """read the selected date
+        Returns:
+            :py:class:`datetime.datetime` or `str`
+        """
+        if self.value == '':
+            return self.value
+        else:
+            return datetime.strptime(self.value, self.date_mapp)
+
     def fill(self, value):
         """Fill date to date box
 
         Args:
-           value (str/ dict): date in `dict` format having keys `day`, `month`, `year` or
-           date in `str` format `dd/mm/yyyy`
+           value (datetime): datetime object.
         Returns:
             :py:class:`bool`
         """
-        date_mapp = self.date_format
-        for item in self.date_format.split('/'):
-            date_mapp = date_mapp.replace(item, self.DATE_MAPPING[item])
-
-        if isinstance(value, str):
-            date_obj = datetime.strptime(value, "%m/%d/%Y")
-        elif isinstance(value, dict):
-            date_obj = datetime(value['year'], value['month'], value['day'])
-        else:
-            ValueError("Value should be in string (dd/mm/yyyy) or \
-            dictionary having keys day, month, year")
-
-        date = datetime.strftime(date_obj, date_mapp)
-
-        if date == self.value:
-            return False
+        if isinstance(self.read(), datetime):
+            if value.date() == self.read().date():
+                return False
 
         if not self.is_readonly:
-            self.parent_browser.clear(self.TEXT_BOX)
-            self.parent_browser.send_keys(date, self.TEXT_BOX)
+            self.parent_browser.clear(self.TEXTBOX)
+            date = datetime.strftime(value, self.date_mapp)
+            self.parent_browser.send_keys(date, self.TEXTBOX)
+            self._active_date.click()
             return True
         else:
-            return self.select(
-                {'day': date_obj.day, 'month': date_obj.month, 'year': date_obj.year})
+            return self._select(value)
 
     @property
     def is_displayed(self):
-        return self.parent_browser.is_displayed(self.TEXT_BOX)
+        """widget displayed or not
+        Returns:
+            :py:class:`bool`
+        """
+        return self.parent_browser.is_displayed(self.TEXTBOX)
 
     @property
     def is_readonly(self):
-        return bool(self.parent_browser.get_attribute('readonly', self.TEXT_BOX))
+        """widget editable or not
+        Returns:
+            :py:class:`bool`
+        """
+        return bool(self.parent_browser.get_attribute('readonly', self.TEXTBOX))
 
     @property
     def date_format(self):
-        return self.parent_browser.get_attribute('data-date-format', self.TEXT_BOX)
+        """widget date format
+        Returns:
+            :py:class:`str`
+        """
+        return self.parent_browser.get_attribute('data-date-format', self.TEXTBOX)
