@@ -1347,7 +1347,7 @@ class BootstrapTreeview(Widget):
                             self.tree_id),
                     'path': path,
                     'cause': 'Could not expand the {} node'.format(self._repr_step(image, step))})
-            if isinstance(step, basestring):
+            if isinstance(step, six.string_types):
                 # To speed up the search when having a string to match, pick up items with that text
                 child_items = self.child_items_with_text(node, step)
             else:
