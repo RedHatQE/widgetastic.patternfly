@@ -1348,7 +1348,7 @@ class BootstrapTreeview(Widget):
                             self.tree_id),
                     'path': path,
                     'cause': 'Could not expand the {} node'.format(self._repr_step(image, step))})
-            if isinstance(step, basestring):
+            if isinstance(step, six.string_types):
                 # To speed up the search when having a string to match, pick up items with that text
                 child_items = self.child_items_with_text(node, step)
             else:
@@ -1807,6 +1807,51 @@ class AboutModal(Widget):
         return items
 
 
+class BreadCrumb(Widget):
+    """ Patternfly BreadCrumb navigation control
+
+    .. code-block:: python
+
+        breadcrumb = BreadCrumb()
+        breadcrumb.click_location(breadcrumb.locations[0])
+    """
+    ROOT = '//ol[contains(@class, "breadcrumb")]'
+    ELEMENTS = './/li'
+
+    def __init__(self, parent, locator=None, logger=None):
+        Widget.__init__(self, parent=parent, logger=logger)
+        self._locator = locator or self.ROOT
+
+    def __locator__(self):
+        return self._locator
+
+    @property
+    def _path_elements(self):
+        return self.browser.elements(self.ELEMENTS, parent=self)
+
+    @property
+    def locations(self):
+        return [self.browser.text(loc) for loc in self._path_elements]
+
+    @property
+    def active_location(self):
+        br = self.browser
+        return next(br.text(loc) for loc in self._path_elements if 'active' in br.classes(loc))
+
+    def click_location(self, name, handle_alert=True):
+        br = self.browser
+        location = next(loc for loc in self._path_elements if br.text(loc) == name)
+        result = br.click(location, ignore_ajax=handle_alert)
+        if handle_alert:
+            self.browser.handle_alert(wait=2.0, squash=True)
+            self.browser.plugin.ensure_page_safe()
+        return result
+
+    def read(self):
+        """Return the active location of the breadcrumb"""
+        return self.active_location
+
+
 class DatePicker(Widget):
     """Represents the Bootstrap DatePicker.
 
@@ -1818,29 +1863,28 @@ class DatePicker(Widget):
 
        date = DatePicker(name='miq_date_1')
     """
-    ROOT = ParametrizedLocator(".//*[contains(@class, 'datepicker-dropdown')]")
-    TEXTBOX = ParametrizedLocator(".//*[@name='{@name}' or @id='{@id}']")
-    DATE = ".//*[contains(@class, 'datepicker-days')]/table/tbody/tr/*"
+    TEXTBOX = ParametrizedLocator('.//*[{@id_attr}]')
+    DATE = ".//*[contains(@class, 'datepicker-days')]/table/tbody/tr/td"
     MONTH = ".//*[contains(@class, 'datepicker-months')]/table/tbody/tr/td/*"
     YEAR = ".//*[contains(@class, 'datepicker-years')]/table/tbody/tr/td/*"
-    PREV = ".//*[contains(@class, 'prev')]"
-    NEXT = ".//*[contains(@class, 'next')]"
-    DATE_PICKER_SWITCH = ".//*[contains(@class, 'datepicker-switch')]"
     DATE_MAPPING = {'dd': '%d', 'mm': '%m', 'MM': '%B', 'yy': '%y', 'yyyy': '%Y'}
+    prev_button = Text(".//*[contains(@class, 'prev')]")
+    next_button = Text(".//*[contains(@class, 'next')]")
+    date_picker_switch = Text(".//*[contains(@class, 'datepicker-switch')]")
 
     def __init__(self, parent, name=None, id=None, logger=None):
         """Create the widget"""
         Widget.__init__(self, parent, logger=logger)
-        self.name = name
-        self.id = id
+        if name or id:
+            if name is not None:
+                id_attr = '@name={}'.format(quote(name))
+            elif id is not None:
+                id_attr = '@id={}'.format(quote(id))
+            self.id_attr = id_attr
 
     @property
     def value(self):
         return self.parent_browser.get_attribute('value', self.TEXTBOX)
-
-    @property
-    def date_switch_value(self):
-        return self.browser.get_attribute('textContent', self.DATE_PICKER_SWITCH)
 
     @property
     def _active_date(self):
@@ -1862,37 +1906,40 @@ class DatePicker(Widget):
 
     def _select_year(self, year):
         for yr in range(1, 10):
-            start_yr, end_yr = [int(item) for item in self.date_switch_value.split('-')]
+            start_yr, end_yr = [int(item) for item in self.date_picker_switch.read().split('-')]
             if start_yr <= int(year) <= end_yr:
                 for el in self.browser.elements(self.YEAR):
                     if int(el.text) == int(year):
                         el.click()
                         return True
             elif int(year) < start_yr:
-                self.browser.click(self.PREV)
+                self.prev_button.click()
             elif int(year) > end_yr:
-                self.browser.click(self.NEXT)
+                self.next_button.click()
         else:
             raise ValueError("Year not valid")
 
     @property
     def date_mapp(self):
-        date_fmt = self.date_format
-        for item in self.date_format.split('/'):
-            date_fmt = date_fmt.replace(item, self.DATE_MAPPING[item])
-        return date_fmt
+        if self.date_format:
+            date_fmt = self.date_format
+            for item in self.date_format.split('/'):
+                date_fmt = date_fmt.replace(item, self.DATE_MAPPING[item])
+            return date_fmt
+        else:
+            return None
 
     def _select(self, value):
-        self.parent_browser.click(self.TEXTBOX)
+        self.browser.click(self.TEXTBOX)
         month = value.strftime("%b")
         day = value.strftime("%d")
         year = value.strftime("%Y")
-        sw_value = self.date_switch_value.split(' ')
+        sw_value = self.date_picker_switch.read().split(' ')
 
         if (value.strftime("%B") not in sw_value) or (year not in sw_value):
-            self.browser.click(self.DATE_PICKER_SWITCH)
-            if year not in self.date_switch_value:
-                self.browser.click(self.DATE_PICKER_SWITCH)
+            self.date_picker_switch.click()
+            if year is not self.date_picker_switch.read:
+                self.date_picker_switch.click()
                 self._select_year(year)
             self._select_month(month)
         self._select_date(day)
@@ -1903,7 +1950,7 @@ class DatePicker(Widget):
         Returns:
             :py:class:`datetime.datetime` or `str`
         """
-        if self.value == '':
+        if self.value == '' or not self.date_mapp:
             return self.value
         else:
             return datetime.strptime(self.value, self.date_mapp)
