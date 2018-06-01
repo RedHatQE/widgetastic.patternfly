@@ -12,7 +12,7 @@ from datetime import datetime
 from widgetastic.exceptions import NoSuchElementException, UnexpectedAlertPresentException, \
     WidgetOperationFailed, StaleElementReferenceException
 from widgetastic.log import call_sig
-from widgetastic.utils import ParametrizedLocator, VersionPick, partial_match
+from widgetastic.utils import ParametrizedLocator, Parameter, VersionPick, partial_match
 from widgetastic.widget import BaseInput, ClickableMixin, TextInput, Text, Widget, View, \
     do_not_read_this_widget
 from widgetastic.xpath import quote
@@ -1852,72 +1852,100 @@ class BreadCrumb(Widget):
         return self.active_location
 
 
-class DatePicker(Widget):
+class DatePicker(View):
     """Represents the Bootstrap DatePicker.
 
       Args:
         name: name of DatePicker
         id: id of DatePicker
+        locator: If none of above apply, you can also supply a full locator.
 
     .. code-block:: python
 
        date = DatePicker(name='miq_date_1')
     """
-    TEXTBOX = ParametrizedLocator('.//*[{@id_attr}]')
-    DATE = ".//*[contains(@class, 'datepicker-days')]/table/tbody/tr/td"
-    MONTH = ".//*[contains(@class, 'datepicker-months')]/table/tbody/tr/td/*"
-    YEAR = ".//*[contains(@class, 'datepicker-years')]/table/tbody/tr/td/*"
+    textbox = TextInput(locator=Parameter('@locator'))
     DATE_MAPPING = {'dd': '%d', 'mm': '%m', 'MM': '%B', 'yy': '%y', 'yyyy': '%Y'}
-    prev_button = Text(".//*[contains(@class, 'prev')]")
-    next_button = Text(".//*[contains(@class, 'next')]")
-    date_picker_switch = Text(".//*[contains(@class, 'datepicker-switch')]")
 
-    def __init__(self, parent, name=None, id=None, logger=None):
-        """Create the widget"""
-        Widget.__init__(self, parent, logger=logger)
-        if name or id:
-            if name is not None:
-                id_attr = '@name={}'.format(quote(name))
-            elif id is not None:
-                id_attr = '@id={}'.format(quote(id))
-            self.id_attr = id_attr
-
-    @property
-    def value(self):
-        return self.parent_browser.get_attribute('value', self.TEXTBOX)
-
-    @property
-    def _active_date(self):
-        for el in self.browser.elements(self.DATE):
-            if bool(self.browser.classes(el) & {'active'}):
-                return el
-
-    def _select_date(self, dd):
-        for el in self.browser.elements(self.DATE):
-            if (not bool({'old', 'new'} & self.browser.classes(el))) and (int(el.text) == int(dd)):
-                el.click()
-                return True
-
-    def _select_month(self, month):
-        for el in self.browser.elements(self.MONTH):
-            if el.text == month:
-                el.click()
-                return True
-
-    def _select_year(self, year):
-        for yr in range(1, 10):
-            start_yr, end_yr = [int(item) for item in self.date_picker_switch.read().split('-')]
-            if start_yr <= int(year) <= end_yr:
-                for el in self.browser.elements(self.YEAR):
-                    if int(el.text) == int(year):
-                        el.click()
-                        return True
-            elif int(year) < start_yr:
-                self.prev_button.click()
-            elif int(year) > end_yr:
-                self.next_button.click()
+    def __init__(self, parent, id=None, name=None, locator=None, logger=None):
+        View.__init__(self, parent=parent, logger=logger)
+        if id:
+            self.locator = './/*[normalize-space(@id)={}]'.format(quote(id))
+        elif name:
+            self.locator = './/*[normalize-space(@name)={}]'.format(quote(name))
+        elif locator:
+            self.locator = locator
         else:
-            raise ValueError("Year not valid")
+            raise TypeError('You need to specify either, id, name or locator for DatePicker')
+
+    class HeaderView(View):
+        prev_button = Text(".//*[contains(@class, 'prev')]")
+        next_button = Text(".//*[contains(@class, 'next')]")
+        dp_switch = Text(".//*[contains(@class, 'datepicker-switch')]")
+        _elements = {}
+
+        def select(self, value):
+            for el, web_el in self._elements.items():
+                if el == value:
+                    web_el.click()
+                    return True
+
+        @property
+        def active(self):
+            for el, web_el in self._elements.items():
+                if bool(self.browser.classes(web_el) & {'active', 'focused'}):
+                    return el
+
+    @View.nested
+    class date_pick(HeaderView):    # noqa
+        DATES = ".//*[contains(@class, 'datepicker-days')]/table/tbody/tr/td"
+        _dates = {}
+
+        @property
+        def _elements(self):
+            for el in self.browser.elements(self.DATES):
+                if not bool({'old', 'new', 'disabled'} & self.browser.classes(el)):
+                    self._dates.update({int(el.text): el})
+            return self._dates
+
+    @View.nested
+    class month_pick(HeaderView):   # noqa
+        MONTHS = ".//*[contains(@class, 'datepicker-months')]/table/tbody/tr/td/*"
+        _months = {}
+
+        @property
+        def _elements(self):
+            for el in self.browser.elements(self.MONTHS):
+                if not bool({'disabled'} & self.browser.classes(el)):
+                    self._months.update({el.text: el})
+            return self._months
+
+    @View.nested
+    class year_pick(HeaderView):    # noqa
+        YEARS = ".//*[contains(@class, 'datepicker-years')]/table/tbody/tr/td/*"
+        _years = {}
+
+        @property
+        def _elements(self):
+            for el in self.browser.elements(self.YEARS):
+                if not bool({'old', 'new', 'disabled'} & self.browser.classes(el)):
+                    self._years.update({int(el.text): el})
+            return self._years
+
+        def select(self, value):
+            for yr in range(0, 10):
+                start_yr, end_yr = [int(item) for item in self.dp_switch.read().split('-')]
+                if start_yr <= value <= end_yr:
+                    for el, web_el in self._elements.items():
+                        if el == value:
+                            web_el.click()
+                            return True
+                elif value < start_yr:
+                    self.prev_button.click()
+                elif value > end_yr:
+                    self.next_button.click()
+            else:
+                raise ValueError("Not valid year or with more than century difference")
 
     @property
     def date_mapp(self):
@@ -1929,31 +1957,15 @@ class DatePicker(Widget):
         else:
             return None
 
-    def _select(self, value):
-        self.browser.click(self.TEXTBOX)
-        month = value.strftime("%b")
-        day = value.strftime("%d")
-        year = value.strftime("%Y")
-        sw_value = self.date_picker_switch.read().split(' ')
-
-        if (value.strftime("%B") not in sw_value) or (year not in sw_value):
-            self.date_picker_switch.click()
-            if year is not self.date_picker_switch.read:
-                self.date_picker_switch.click()
-                self._select_year(year)
-            self._select_month(month)
-        self._select_date(day)
-        return True
-
     def read(self):
         """read the selected date
         Returns:
             :py:class:`datetime.datetime` or `str`
         """
-        if self.value == '' or not self.date_mapp:
-            return self.value
+        if self.textbox.value == '' or not self.date_mapp:
+            return self.textbox.value
         else:
-            return datetime.strptime(self.value, self.date_mapp)
+            return datetime.strptime(self.textbox.value, self.date_mapp)
 
     def fill(self, value):
         """Fill date to date box
@@ -1968,21 +1980,21 @@ class DatePicker(Widget):
                 return False
 
         if not self.is_readonly:
-            self.parent_browser.clear(self.TEXTBOX)
             date = datetime.strftime(value, self.date_mapp)
-            self.parent_browser.send_keys(date, self.TEXTBOX)
-            self._active_date.click()
+            self.textbox.fill(date)
+            self.date_pick._elements[self.date_pick.active].click()
             return True
         else:
-            return self._select(value)
-
-    @property
-    def is_displayed(self):
-        """widget displayed or not
-        Returns:
-            :py:class:`bool`
-        """
-        return self.parent_browser.is_displayed(self.TEXTBOX)
+            self.browser.click(self.textbox)
+            sw_value = self.date_pick.dp_switch.read().split(' ')
+            if (value.strftime("%B") not in sw_value) or (str(value.year) not in sw_value):
+                self.date_pick.dp_switch.click()
+                if str(value.year) is not self.month_pick.dp_switch.read():
+                    self.month_pick.dp_switch.click()
+                    self.year_pick.select(value=value.year)
+                self.month_pick.select(value=value.strftime("%b"))
+            self.date_pick.select(value=value.day)
+            return True
 
     @property
     def is_readonly(self):
@@ -1990,7 +2002,7 @@ class DatePicker(Widget):
         Returns:
             :py:class:`bool`
         """
-        return bool(self.parent_browser.get_attribute('readonly', self.TEXTBOX))
+        return bool(self.browser.get_attribute('readonly', self.textbox))
 
     @property
     def date_format(self):
@@ -1998,4 +2010,12 @@ class DatePicker(Widget):
         Returns:
             :py:class:`str`
         """
-        return self.parent_browser.get_attribute('data-date-format', self.TEXTBOX)
+        return self.browser.get_attribute('data-date-format', self.textbox)
+
+    @property
+    def is_displayed(self):
+        """widget displayed or not
+        Returns:
+            :py:class:`bool`
+        """
+        return self.parent_browser.is_displayed(self.textbox)
