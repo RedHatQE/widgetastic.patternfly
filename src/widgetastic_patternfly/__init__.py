@@ -1856,23 +1856,28 @@ class DatePicker(View):
     """Represents the Bootstrap DatePicker.
 
       Args:
-        name: name of DatePicker
-        id: id of DatePicker
-        locator: If none of above apply, you can also supply a full locator.
+        name: Name of DatePicker
+        id: Id of DatePicker
+        locator: If none of above apply, you can also supply a full locator
+        strptime_format: `datetime` module `strptime` format. The default is for `mm/dd/yyyy` but 
+        the user can overwrite as per widget requirement, which should comparable with datetime.
 
     .. code-block:: python
 
        date = DatePicker(name='miq_date_1')
     """
     textbox = TextInput(locator=Parameter('@locator'))
-    DATE_MAPPING = {'dd': '%d', 'mm': '%m', 'MM': '%B', 'yy': '%y', 'yyyy': '%Y'}
 
-    def __init__(self, parent, id=None, name=None, locator=None, logger=None):
+    def __init__(self, parent, id=None, name=None, strptime_format='%m/%d/%Y',
+                locator=None, logger=None):
         View.__init__(self, parent=parent, logger=logger)
+
+        self.strptime_format = strptime_format
+
         if id:
-            self.locator = './/*[normalize-space(@id)={}]'.format(quote(id))
+            self.locator = './/*[(self::input or self::textarea) and @id={}]'.format(quote(id))
         elif name:
-            self.locator = './/*[normalize-space(@name)={}]'.format(quote(name))
+            self.locator = './/*[(self::input or self::textarea) and @name={}]'.format(quote(name))
         elif locator:
             self.locator = locator
         else:
@@ -1881,7 +1886,7 @@ class DatePicker(View):
     class HeaderView(View):
         prev_button = Text(".//*[contains(@class, 'prev')]")
         next_button = Text(".//*[contains(@class, 'next')]")
-        dp_switch = Text(".//*[contains(@class, 'datepicker-switch')]")
+        datepicker_switch = Text(".//*[contains(@class, 'datepicker-switch')]")
         _elements = {}
 
         def select(self, value):
@@ -1934,7 +1939,7 @@ class DatePicker(View):
 
         def select(self, value):
             for yr in range(0, 10):
-                start_yr, end_yr = [int(item) for item in self.dp_switch.read().split('-')]
+                start_yr, end_yr = [int(item) for item in self.datepicker_switch.read().split('-')]
                 if start_yr <= value <= end_yr:
                     for el, web_el in self._elements.items():
                         if el == value:
@@ -1947,50 +1952,41 @@ class DatePicker(View):
             else:
                 raise ValueError("Not valid year or with more than century difference")
 
-    @property
-    def date_mapp(self):
-        if self.date_format:
-            date_fmt = self.date_format
-            for item in self.date_format.split('/'):
-                date_fmt = date_fmt.replace(item, self.DATE_MAPPING[item])
-            return date_fmt
-        else:
+    def read(self):
+        """Read the current date form DatePicker
+
+        Returns:
+            :py:class:`datetime`
+        """
+        try:
+            return datetime.strptime(self.textbox.value, self.strptime_format)
+        except ValueError:
             return None
 
-    def read(self):
-        """read the selected date
-        Returns:
-            :py:class:`datetime.datetime` or `str`
-        """
-        if self.textbox.value == '' or not self.date_mapp:
-            return self.textbox.value
-        else:
-            return datetime.strptime(self.textbox.value, self.date_mapp)
-
     def fill(self, value):
-        """Fill date to date box
+        """Fill date to DatePicker
 
         Args:
-           value (datetime): datetime object.
+           value: datetime object.
+
         Returns:
             :py:class:`bool`
         """
-        if isinstance(self.read(), datetime):
-            if value.date() == self.read().date():
-                return False
+        if self.read():
+            if value.date() == self.read().date(): return False
 
         if not self.is_readonly:
-            date = datetime.strftime(value, self.date_mapp)
+            date = datetime.strftime(value, self.strptime_format)
             self.textbox.fill(date)
             self.date_pick._elements[self.date_pick.active].click()
             return True
         else:
             self.browser.click(self.textbox)
-            sw_value = self.date_pick.dp_switch.read().split(' ')
+            sw_value = self.date_pick.datepicker_switch.read().split(' ')
             if (value.strftime("%B") not in sw_value) or (str(value.year) not in sw_value):
-                self.date_pick.dp_switch.click()
-                if str(value.year) is not self.month_pick.dp_switch.read():
-                    self.month_pick.dp_switch.click()
+                self.date_pick.datepicker_switch.click()
+                if str(value.year) is not self.month_pick.datepicker_switch.read():
+                    self.month_pick.datepicker_switch.click()
                     self.year_pick.select(value=value.year)
                 self.month_pick.select(value=value.strftime("%b"))
             self.date_pick.select(value=value.day)
@@ -1998,7 +1994,8 @@ class DatePicker(View):
 
     @property
     def is_readonly(self):
-        """widget editable or not
+        """DatePicker is editable or not
+
         Returns:
             :py:class:`bool`
         """
@@ -2006,7 +2003,8 @@ class DatePicker(View):
 
     @property
     def date_format(self):
-        """widget date format
+        """DatePicker date format
+
         Returns:
             :py:class:`str`
         """
@@ -2014,7 +2012,8 @@ class DatePicker(View):
 
     @property
     def is_displayed(self):
-        """widget displayed or not
+        """DatePicker displayed or not
+
         Returns:
             :py:class:`bool`
         """
