@@ -1858,26 +1858,33 @@ class DatePicker(View):
       Args:
         name: Name of DatePicker
         id: Id of DatePicker
-        locator: If none of above apply, you can also supply a full locator
-        strptime_format: `datetime` module `strptime` format. The default is for `mm/dd/yyyy` but 
-        the user can overwrite as per widget requirement, which should comparable with datetime.
+        locator: If none of the above applies, you can also supply a full locator
+        strptime_format: `datetime` module `strptime` format. The default is for `mm/dd/yyyy` but
+        the user can overwrite as per widget requirement which should comparable with datetime.
 
     .. code-block:: python
+        date = DatePicker(name='miq_date_1')
 
-       date = DatePicker(name='miq_date_1')
+        # check readonly or editable
+        date.is_readonly
+        # fill current date
+        date.fill(datetime.now())
+        # read selected date for DatePicker
+        date.read()
     """
     textbox = TextInput(locator=Parameter('@locator'))
 
-    def __init__(self, parent, id=None, name=None, strptime_format='%m/%d/%Y',
-                locator=None, logger=None):
+    def __init__(self, parent, id=None, name=None, locator=None,
+                strptime_format='%m/%d/%Y', logger=None):
         View.__init__(self, parent=parent, logger=logger)
 
         self.strptime_format = strptime_format
+        base_locator = './/*[(self::input or self::textarea) and @{}={}]'
 
         if id:
-            self.locator = './/*[(self::input or self::textarea) and @id={}]'.format(quote(id))
+            self.locator = base_locator.format('id', quote(id))
         elif name:
-            self.locator = './/*[(self::input or self::textarea) and @name={}]'.format(quote(name))
+            self.locator = base_locator.format('name', quote(name))
         elif locator:
             self.locator = locator
         else:
@@ -1904,41 +1911,41 @@ class DatePicker(View):
     @View.nested
     class date_pick(HeaderView):    # noqa
         DATES = ".//*[contains(@class, 'datepicker-days')]/table/tbody/tr/td"
-        _dates = {}
 
         @property
         def _elements(self):
+            dates = {}
             for el in self.browser.elements(self.DATES):
                 if not bool({'old', 'new', 'disabled'} & self.browser.classes(el)):
-                    self._dates.update({int(el.text): el})
-            return self._dates
+                    dates.update({int(el.text): el})
+            return dates
 
     @View.nested
     class month_pick(HeaderView):   # noqa
         MONTHS = ".//*[contains(@class, 'datepicker-months')]/table/tbody/tr/td/*"
-        _months = {}
 
         @property
         def _elements(self):
+            months = {}
             for el in self.browser.elements(self.MONTHS):
                 if not bool({'disabled'} & self.browser.classes(el)):
-                    self._months.update({el.text: el})
-            return self._months
+                    months.update({el.text: el})
+            return months
 
     @View.nested
     class year_pick(HeaderView):    # noqa
         YEARS = ".//*[contains(@class, 'datepicker-years')]/table/tbody/tr/td/*"
-        _years = {}
 
         @property
         def _elements(self):
+            years = {}
             for el in self.browser.elements(self.YEARS):
                 if not bool({'old', 'new', 'disabled'} & self.browser.classes(el)):
-                    self._years.update({int(el.text): el})
-            return self._years
+                    years.update({int(el.text): el})
+            return years
 
         def select(self, value):
-            for yr in range(0, 10):
+            for _yr in range(10):
                 start_yr, end_yr = [int(item) for item in self.datepicker_switch.read().split('-')]
                 if start_yr <= value <= end_yr:
                     for el, web_el in self._elements.items():
@@ -1972,8 +1979,9 @@ class DatePicker(View):
         Returns:
             :py:class:`bool`
         """
-        if self.read():
-            if value.date() == self.read().date(): return False
+        current_date = self.read()
+        if current_date:
+            if value.date() == current_date.date(): return False
 
         if not self.is_readonly:
             date = datetime.strftime(value, self.strptime_format)
