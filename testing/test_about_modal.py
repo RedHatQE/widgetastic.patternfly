@@ -39,4 +39,3 @@ def test_modal_close(browser):
     # close the modal
     view.about.close()
     assert not view.about.is_open
-
