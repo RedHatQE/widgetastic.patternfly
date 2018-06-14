@@ -445,8 +445,7 @@ class BootstrapNav(Widget):
     @property
     def currently_selected(self):
         """A property to return the currently selected menu item"""
-        return [self.browser.text(el)
-            for el in self.browser.elements(self.CURRENTLY_SELECTED)]
+        return [self.browser.text(el) for el in self.browser.elements(self.CURRENTLY_SELECTED)]
 
     def read(self):
         """Implement read()"""
@@ -1874,8 +1873,8 @@ class DatePicker(View):
     """
     textbox = TextInput(locator=Parameter('@locator'))
 
-    def __init__(self, parent, id=None, name=None, locator=None,
-                strptime_format='%m/%d/%Y', logger=None):
+    def __init__(self, parent, id=None, name=None,
+                strptime_format='%m/%d/%Y', locator=None, logger=None): # noqa
         View.__init__(self, parent=parent, logger=logger)
 
         self.strptime_format = strptime_format
@@ -1944,20 +1943,21 @@ class DatePicker(View):
                     years.update({int(el.text): el})
             return years
 
+        def _pick(self, value):
+            for el, web_el in self._elements.items():
+                if el == value:
+                    web_el.click()
+                    return True
+
         def select(self, value):
-            for _yr in range(10):
-                start_yr, end_yr = [int(item) for item in self.datepicker_switch.read().split('-')]
-                if start_yr <= value <= end_yr:
-                    for el, web_el in self._elements.items():
-                        if el == value:
-                            web_el.click()
-                            return True
-                elif value < start_yr:
-                    self.prev_button.click()
-                elif value > end_yr:
+            start_yr, end_yr = [int(item) for item in self.datepicker_switch.read().split('-')]
+            if value > end_yr:
+                for _yr in range(end_yr, value, 10):
                     self.next_button.click()
-            else:
-                raise ValueError("Not valid year or with more than century difference")
+            elif value < start_yr:
+                for _yr in range(start_yr, value, -10):
+                    self.prev_button.click()
+            self._pick(value)
 
     def read(self):
         """Read the current date form DatePicker
@@ -1980,28 +1980,25 @@ class DatePicker(View):
             :py:class:`bool`
         """
         current_date = self.read()
-        if current_date:
-            if value.date() == current_date.date(): return False
+        if current_date and value.date() == current_date.date():
+            return False
 
-        if not self.is_readonly:
+        if not self.readonly:
             date = datetime.strftime(value, self.strptime_format)
             self.textbox.fill(date)
             self.date_pick._elements[self.date_pick.active].click()
             return True
         else:
             self.browser.click(self.textbox)
-            sw_value = self.date_pick.datepicker_switch.read().split(' ')
-            if (value.strftime("%B") not in sw_value) or (str(value.year) not in sw_value):
-                self.date_pick.datepicker_switch.click()
-                if str(value.year) is not self.month_pick.datepicker_switch.read():
-                    self.month_pick.datepicker_switch.click()
-                    self.year_pick.select(value=value.year)
-                self.month_pick.select(value=value.strftime("%b"))
+            self.date_pick.datepicker_switch.click()
+            self.month_pick.datepicker_switch.click()
+            self.year_pick.select(value=value.year)
+            self.month_pick.select(value=value.strftime("%b"))
             self.date_pick.select(value=value.day)
             return True
 
     @property
-    def is_readonly(self):
+    def readonly(self):
         """DatePicker is editable or not
 
         Returns:
@@ -2025,4 +2022,4 @@ class DatePicker(View):
         Returns:
             :py:class:`bool`
         """
-        return self.parent_browser.is_displayed(self.textbox)
+        return self.browser.is_displayed(self.textbox)
