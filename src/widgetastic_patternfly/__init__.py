@@ -1952,10 +1952,10 @@ class DatePicker(View):
         def select(self, value):
             start_yr, end_yr = [int(item) for item in self.datepicker_switch.read().split('-')]
             if value > end_yr:
-                for _yr in range(end_yr, value, 10):
+                for _ in range(end_yr, value, 10):
                     self.next_button.click()
             elif value < start_yr:
-                for _yr in range(start_yr, value, -10):
+                for _ in range(start_yr, value, -10):
                     self.prev_button.click()
             self._pick(value)
 
