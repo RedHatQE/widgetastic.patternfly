@@ -14,6 +14,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.23.1/js/patternfly.min.js" integrity="sha256-XI7ZZ/YpLWmMS6Kg6lkpgWT9sj1KC1DAq8Aw358n0zU=" crossorigin="anonymous"></script>
+  <!-- Include Date Picker -->
+  <script type="text/javascript"    src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
+  <script src="components/bootstrap-datepicker/dist/js/bootstrap-datepicker.js"></script>
   <title>Patternfly testing page</title>
 </head>
 <body>
@@ -66,6 +69,56 @@
   </div>
 
 
+<!--------------------------------- Bootstrap-Datepicker------------------------------------------>
+<div class="datepicker_container" align="center" style="width: 300px; text-align:center">
+  <div class="datepicker_readonly">
+    <label class="control-label " for="date_readonly">
+      Bootstrap datepicker readonly
+    </label>
+    <input class="form-control" id="date_readonly" name="date_readonly" readonly="readonly" autoclose="true" placeholder="MM/DD/YYYY" data-date-format="mm/dd/yyyy" type="text"/>
+  </div>
+     
+  <div class="datepicker_readwrite">
+    <label class="control-label " for="date_readwrite">
+      Bootstrap datepicker readwrite
+    </label>
+    <input class="form-control" id="date_readwrite" name="date_readwrite" autoclose="true" placeholder="MM/DD/YYYY" data-date-format="mm/dd/yyyy" type="text"/>
+  </div>
 
+  <div class="patternfly_datepicker">
+      <label class="control-label " for="date_readwrite">
+        Patternfly Basic DatePicker
+      </label>
+      <input type="text" id="patternfly_dp" class="form-control bootstrap-datepicker" readonly><span class="input-group-addon"><span class="fa fa-calendar"></span></span>
+  </div>
+</div>  
+
+<script>
+  $(document).ready(function(){
+    var date_in_readonly=$('input[name="date_readonly"]');
+    var date_in_readwrite=$('input[name="date_readwrite"]');
+    var date_in_patternfly=$('input[id="patternfly_dp"]')
+    //our date input has the name or id
+    var container=$('.bootstrap-iso form').length>0 ? $('.bootstrap-iso form').parent() : "body";
+    date_in_readonly.datepicker({
+        format: 'mm/dd/yyyy',
+        container: container,
+        todayHighlight: true,
+        autoclose: true,
+    })
+    date_in_readwrite.datepicker({
+        format: 'mm/dd/yyyy',
+        todayHighlight: true,
+        autoclose: true,
+    })
+    date_in_patternfly.datepicker({
+      autoclose: true,
+      orientation: "top auto",
+      todayBtn: "linked",
+      todayHighlight: true
+    });
+})
+</script>
+<!--------------------------------- Bootstrap-Datepicker End ------------------------------------>
 </body>
 </html>
