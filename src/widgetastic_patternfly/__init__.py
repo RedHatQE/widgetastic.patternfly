@@ -1597,7 +1597,7 @@ class Dropdown(Widget):
         li = self.browser.element('..', parent=el)
         return 'disabled' not in self.browser.classes(li)
 
-    def item_select(self, item, handle_alert=None):
+    def item_select(self, item, handle_alert=None, nav_click=False):
         """Opens the dropdown and selects the desired item.
 
         Args:
@@ -1612,7 +1612,9 @@ class Dropdown(Widget):
                     'Item "{}" of dropdown "{}" is disabled\n'
                     'The following items are available: {}'
                     .format(item, self.text, ';'.join(self.items)))
-            self.browser.click(self.item_element(item), ignore_ajax=handle_alert is not None)
+            self.browser.click(
+                self.item_element(item), ignore_ajax=handle_alert is not None, nav_click=nav_click
+            )
             if handle_alert is not None:
                 self.browser.handle_alert(cancel=not handle_alert, wait=10.0)
                 self.browser.plugin.ensure_page_safe()
