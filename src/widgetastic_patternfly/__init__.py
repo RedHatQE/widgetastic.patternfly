@@ -609,11 +609,23 @@ class VerticalNavigation(Widget):
                 # No safety check because previous command did it
                 self.browser.move_to_element(link, check_safe=False)
 
-                @wait_for_decorator(timeout='10s', delay=0.2)
-                def other_div_displayed():
-                    return 'is-hover' in self.browser.classes(
-                        self.MATCHING_LI_FOR_DIV.format(quote(level)),
-                        parent=current_div)
+                try:
+                    @wait_for_decorator(timeout='5s', delay=0.2)
+                    def other_div_displayed():
+                        return 'is-hover' in self.browser.classes(
+                            self.MATCHING_LI_FOR_DIV.format(quote(level)),
+                            parent=current_div)
+                except TimedOutError as e:
+                    self.logger.warning(
+                        "The div didn't have the hover class, moving again and "
+                        "waiting a little longer"
+                    )
+                    self.browser.move_to_element(link, check_safe=False)
+                    @wait_for_decorator(timeout='5s', delay=0.2)
+                    def other_div_displayed():
+                        return 'is-hover' in self.browser.classes(
+                            self.MATCHING_LI_FOR_DIV.format(quote(level)),
+                            parent=current_div)
 
                 new_div = self.get_child_div_for(*passed_levels)
                 # No safety check because previous command did it
@@ -626,7 +638,7 @@ class VerticalNavigation(Widget):
                 # finished
                 self.logger.debug('finishing the menu selection by clicking on %s', level)
                 # No safety check because previous command did it
-                self.browser.click(link, ignore_ajax=True, check_safe=False)
+                self.browser.click(link, ignore_ajax=True, check_safe=False, nav_click=True)
                 self.browser.handle_alert(wait=2.0, squash=True)
 
     def get_child_div_for(self, *levels):
