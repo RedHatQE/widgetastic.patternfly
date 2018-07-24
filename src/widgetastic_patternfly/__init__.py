@@ -141,7 +141,8 @@ class Button(Widget, ClickableMixin):
     @property
     def disabled(self):
         return ('disabled' in self.browser.classes(self) or
-                self.browser.get_attribute('disabled', self) == 'disabled')
+                self.browser.get_attribute('disabled', self) == 'disabled' or
+                self.browser.get_attribute('disabled', self) == 'true')
 
     def __repr__(self):
         return '{}{}'.format(type(self).__name__, call_sig(self.args, self.kwargs))
