@@ -921,25 +921,28 @@ class BootstrapSelect(Widget, ClickableMixin):
                 self.logger.info('selecting by partial visible text: %r', item)
                 try:
                     self.browser.click(
-                        self.BY_PARTIAL_VISIBLE_TEXT.format(quote(item)), parent=self)
+                        self.BY_PARTIAL_VISIBLE_TEXT.format(quote(item)), parent=self,
+                        force_scroll=True)
                 except NoSuchElementException:
                     try:
                         # Added this as for some views(some tags pages) dropdown is separated from
                         # button and doesn't have exact id or name
                         self.browser.click(
-                            self.BY_PARTIAL_VISIBLE_TEXT.format(quote(item)))
+                            self.BY_PARTIAL_VISIBLE_TEXT.format(quote(item)), force_scroll=True)
                     except NoSuchElementException:
                         raise SelectItemNotFound(widget=self, item=item,
                                                  options=[opt.text for opt in self.all_options])
             else:
                 self.logger.info('selecting by visible text: %r', item)
                 try:
-                    self.browser.click(self.BY_VISIBLE_TEXT.format(quote(item)), parent=self)
+                    self.browser.click(self.BY_VISIBLE_TEXT.format(quote(item)),
+                                       parent=self,  force_scroll=True)
                 except NoSuchElementException:
                     try:
                         # Added this as for some views(some tags pages) dropdown is separated from
                         # button and doesn't have exact id or name
-                        self.browser.click(self.BY_VISIBLE_TEXT.format(quote(item)))
+                        self.browser.click(self.BY_VISIBLE_TEXT.format(quote(item)),
+                                           force_scroll=True)
                     except NoSuchElementException:
                         raise SelectItemNotFound(widget=self, item=item,
                                                  options=[opt.text for opt in self.all_options])
