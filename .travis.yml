@@ -4,7 +4,16 @@ python:
 - '3.4'
 - '3.5'
 - '3.6'
-install: pip install tox-travis
+addons:
+  firefox: latest
+before_install:
+  # install geckdriver for firefox
+  - wget https://github.com/mozilla/geckodriver/releases/download/v0.22.0/geckodriver-v0.22.0-linux64.tar.gz
+  - mkdir geckodriver
+  - tar -xzvf geckodriver-v0.22.0-linux64.tar.gz -C geckodriver
+  - export PATH=$PATH:$PWD/geckodriver
+install:
+  - pip install tox-travis
 script: tox
 after_success:
 - coveralls

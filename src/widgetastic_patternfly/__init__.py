@@ -9,8 +9,13 @@ from cached_property import cached_property
 from collections import namedtuple
 from datetime import datetime
 
-from widgetastic.exceptions import NoSuchElementException, UnexpectedAlertPresentException, \
-    WidgetOperationFailed, StaleElementReferenceException
+from widgetastic.exceptions import (
+    NoSuchElementException,
+    UnexpectedAlertPresentException,
+    WidgetOperationFailed,
+    StaleElementReferenceException,
+    LocatorNotImplemented,
+    )
 from widgetastic.log import call_sig
 from widgetastic.utils import ParametrizedLocator, Parameter, VersionPick, partial_match
 from widgetastic.widget import BaseInput, ClickableMixin, TextInput, Text, Widget, View, \
@@ -18,6 +23,8 @@ from widgetastic.widget import BaseInput, ClickableMixin, TextInput, Text, Widge
 from widgetastic.xpath import quote
 
 from wait_for import wait_for, wait_for_decorator, TimedOutError
+
+from .utils import PFIcon
 
 
 class CandidateNotFound(Exception):
@@ -2027,3 +2034,205 @@ class DatePicker(View):
             :py:class:`bool`
         """
         return self.browser.is_displayed(self.textbox)
+
+
+class StatusNotification(Widget):
+    """Class for the notification elements that are in aggregate status cards
+
+    Provides some attributes for storing the notification class based on icon constants
+    And a click method for those notifications tied to an anchor
+    """
+    # Notification count will be in anchor with an icon
+    ANCHOR = './a'
+    TEXT = './*[normalize-space(.)]'
+
+    def __init__(self, parent, note_element, logger):
+        Widget.__init__(self, parent=parent, logger=logger)
+        self.note_element = note_element
+
+    def __locator__(self):
+        return self.note_element
+
+    @property
+    def icon(self):
+        """Icon constant for the notification span
+
+        Returns:
+            None if no icon is found in the title element
+            PFIcon constant if icon found
+        """
+        try:
+            return PFIcon.icon_from_element(self.note_element, browser=self.browser)
+        except NoSuchElementException:
+            return None
+
+    @property
+    def text(self):
+        """text associated with the notification, likely a count
+
+        Returns:
+            None if no text is found in the notification element
+            str text from the element
+        """
+        try:
+            return self.browser.text(self.TEXT, parent=self)
+        except NoSuchElementException:
+            return None
+
+    def read(self):
+        """Read the notification attributes and return a dict
+
+        Returns:
+            dict containing icon and text attributes
+        """
+        return {
+            'icon': self.icon,
+            'text': self.text
+        }
+
+    def click(self):
+        """Click the anchor for this notification
+
+        Raises:
+            NoSuchElementException: when there is no anchor to click
+        """
+        self.browser.click(self.ANCHOR, parent=self)
+
+
+class AggregateStatusCard(View):
+    """Widget for patternfly aggregate status card, used in dashboard views
+
+    This covers the standard type card
+    https://www.patternfly.org/pattern-library/cards/aggregate-status-card/#example-code-1
+    """
+    # Get the aggregate-status card div, per patternfly reference markup
+    ROOT = ParametrizedLocator(
+        './/div[contains(@class, "card-pf-aggregate-status") '
+        'and not(contains(@class, "card-pf-aggregate-status-mini")) '
+        'and h2[contains(@class, "card-pf-title")]'
+        '//span[normalize-space(following::text())={@name|quote}]]'
+    )
+
+    # count is in span with specific class under main card div
+    TITLE = './h2[contains(@class, "card-pf-title")]'
+    COUNT = './/span[contains(@class, "card-pf-aggregate-status-count")]'
+    TITLE_ANCHOR = '/a'
+
+    BODY = './div[contains(@class, "card-pf-body")]'
+    NOTIFICATION = ('./p[contains(@class, "card-pf-aggregate-status-notifications")]'
+                    '//span[contains(@class, "card-pf-aggregate-status-notification")]')
+
+    ACTION_ANCHOR = ParametrizedLocator('.//a[@title={@action_title|quote} '
+                                        'or @data-original-title={@action_title|quote}]')
+
+    def __init__(self, parent, name, locator=None, action_title=None, logger=None):
+        """Constructor, using name, can specify locator
+
+        Args:
+            name: string name of the status card, displayed with count in top line
+            action_title: title attribute for the anchor of the action link in notification block
+                            In the patternfly ref, this is an 'add' action with icon
+        """
+        Widget.__init__(self, parent=parent, logger=logger)
+        self.name = name
+        self.locator = locator or self.ROOT
+        self.action_title = action_title
+
+    def __locator__(self):
+        return self.locator
+
+    @property
+    def _title(self):
+        """tool for local methods to get the title element"""
+        return self.browser.element(self.TITLE, parent=self)
+
+    @property
+    def _body(self):
+        """tool for local methods to get the body element"""
+        return self.browser.element(self.BODY, parent=self)
+
+    @property
+    def count(self):
+        """count in the title
+
+        Returns:
+            None if no count element is found
+            int count from the element
+        """
+        try:
+            return int(
+                self.browser.text(
+                    self.browser.element(self.COUNT, parent=self._title)
+                )
+            )
+        except NoSuchElementException:
+            return None
+
+    @property
+    def icon(self):
+        """icon of the title
+
+        Returns:
+            None if no icon is found in the title element
+            PFIcon constant if icon found
+        """
+        try:
+            return PFIcon.icon_from_element(element=self._title, browser=self.browser)
+        except NoSuchElementException:
+            return None
+
+    @property
+    def notifications(self):
+        """read method for the status notifications in the body of the card
+
+        Returns
+            list of notification elements, empty when there are none
+        """
+        try:
+            notes = self.browser.elements(self.NOTIFICATION, parent=self._body)
+        except NoSuchElementException:
+            return []
+        return [
+            StatusNotification(parent=self, note_element=note, logger=self.logger)
+            for note in notes
+        ]
+
+    def read(self):
+        items = dict(
+            icon=self.icon,
+            count=self.count,
+            name=self.name
+        )
+        items.update(
+            {
+                'notifications': [note.read() for note in self.notifications]
+            }
+        )
+        return items
+
+    def click(self):
+        self.click_title()
+
+    def click_title(self):
+        self.browser.click(self.TITLE_ANCHOR, parent=self)
+
+    def click_body_action(self):
+        if self.action_title:
+            self.browser.click(self.ACTION_ANCHOR, parent=self)
+        else:
+            raise LocatorNotImplemented('No action_title, cannot locate action element for click')
+
+
+class AggregateStatusMiniCard(AggregateStatusCard):
+    """Widget for the mini type of aggregate status card
+
+    slightly different display and locator
+    https://www.patternfly.org/pattern-library/cards/aggregate-status-card/#example-code-2
+    """
+    # TODO testing of parent methods against mini card
+    ROOT = ParametrizedLocator(
+        './/div[contains(@class, "card-pf-aggregate-status") '
+        'and contains(@class, "card-pf-aggregate-status-mini") '
+        'and h2[contains(@class, "card-pf-title")]'
+        '//span[normalize-space(following::text())={@name|quote}]]'
+    )

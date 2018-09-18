@@ -22,7 +22,9 @@ class CustomBrowser(Browser):
 
 @pytest.fixture(scope='session')
 def selenium(request):
-    driver = webdriver.PhantomJS()
+    options = webdriver.FirefoxOptions()
+    options.headless = True
+    driver = webdriver.Firefox(firefox_options=options)
     request.addfinalizer(driver.quit)
     driver.maximize_window()
     global selenium_browser
@@ -45,5 +47,12 @@ def browser(selenium, httpserver, request):
 def pytest_exception_interact(node, call, report):
     if selenium_browser is not None:
         allure.attach(
-            'Error screenshot', selenium_browser.get_screenshot_as_png(), allure.attach_type.PNG)
-        allure.attach('Error traceback', str(report.longrepr), allure.attach_type.TEXT)
+            selenium_browser.get_screenshot_as_png(),
+            'Error screenshot',
+            allure.attachment_type.PNG
+        )
+        allure.attach(
+            str(report.longrepr),
+            'Error traceback',
+            allure.attachment_type.TEXT
+        )

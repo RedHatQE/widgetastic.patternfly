@@ -11,7 +11,11 @@ class IconConstants(Constant):
     ADD = 'pficon-add-circle-o'
     APPLICATIONS = 'pficon-applications'
     ARROW = 'pficon-arrow'
+    CLUSTER = 'pficon-cluster'
+    CONTAINER_NODE = 'pficon-container-node'
+    CPU = 'pficon-cpu'
     ERROR = 'pficon-error-circle-o'
+    HOME = 'pficon-home'
     OK = 'pficon-ok'
     WARNING = 'pficon-warning-triangle-o'
     REFRESH = 'fa-refresh'
@@ -53,7 +57,7 @@ class PFIcon(object):
                       for c in browser.classes(els.pop())
                       if c.startswith('pficon-') or c.startswith('fa-')]
         # slice off first 6 chars if a class was found
-        icon_name = icon_class or None
+        icon_name = icon_class.pop() if icon_class else None
         icons = [
             getattr(cls.icons, attr, None)
             for attr, icon_string in cls.icons.icon_strings().items()
