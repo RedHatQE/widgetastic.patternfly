@@ -8,8 +8,8 @@ widgetastic.patternfly
 .. image:: https://coveralls.io/repos/github/RedHatQE/widgetastic.patternfly/badge.svg?branch=master
     :target: https://coveralls.io/github/RedHatQE/widgetastic.patternfly?branch=master
 
-.. image:: https://readthedocs.org/projects/widgetasticpatternfly/badge/?version=latest
-    :target: http://widgetasticpatternfly.readthedocs.io/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/widgetastic-patternfly/badge/?version=latest
+    :target: http://widgetastic-patternfly.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
 Patternfly_ widget library for Widgetastic_.
