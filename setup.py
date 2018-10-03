@@ -16,6 +16,7 @@ setup(
     package_dir={'': 'src'},
     install_requires=[
         'widgetastic.core>=0.10.0',
+        'aenum==2.1.2'
     ],
     setup_requires=[
         'setuptools_scm',
