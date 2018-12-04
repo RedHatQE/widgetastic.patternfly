@@ -215,9 +215,11 @@ class FlashMessages(Widget):
     @property
     def messages(self):
         result = []
+        msg_xpath = ('.//div[@id="flash_text_div" or '
+                     'contains(@class, "flash_text_div")]/div[contains(@class, "alert")]')
         try:
-            for flash_div in self.browser.elements(
-                    './div[contains(@class, "alert")]', parent=self, check_visibility=True):
+
+            for flash_div in self.browser.elements(msg_xpath, parent=self, check_visibility=True):
                 result.append(FlashMessage(self, flash_div, logger=self.logger))
         except NoSuchElementException:
             pass
