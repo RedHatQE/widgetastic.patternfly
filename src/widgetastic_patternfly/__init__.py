@@ -8,6 +8,7 @@ import time
 from cached_property import cached_property
 from collections import namedtuple
 from datetime import datetime
+from operator import not_
 
 from widgetastic.exceptions import (
     NoSuchElementException,
@@ -229,39 +230,61 @@ class FlashMessages(Widget):
         for message in self.messages:
             message.dismiss()
 
-    def assert_no_error(self):
-        self.logger.info('asserting there are no error messages')
-        for message in self.messages:
-            if message.type not in {'success', 'info', 'warning'}:
-                self.logger.error('%s: %r', message.type, message.text)
-                raise AssertionError('assert_no_error: {}: {}'.format(message.type, message.text))
-            else:
-                self.logger.info('%s: %r', message.type, message.text)
-
-    def assert_message(self, text, t=None, partial=False):
-        log_part = 'partial match of' if partial else ''
+    def match_messages(self, text=None, t=None, partial=False, inverse=False):
+        msg_type = t if isinstance(t, (tuple, list, set, type(None))) else (t, )
+        # below is a little bit tricky statement
+        # if inverse is True, further comparison statements will be treated as is
+        # and inverted by not_ otherwise
+        op = bool if inverse else not_
+        log_part = 'partial' if partial else 'exact'
         if t is not None:
-            self.logger.info('asserting %s the flash message %r of type %r', log_part, text, t)
+            self.logger.info('%s match of the flash message %r of type %r', log_part, text, t)
         else:
-            self.logger.info('asserting %s the flash message %r', log_part, text)
-        all_messages = self.messages  # Store for logging on exception without querying twice
-        for message in all_messages:
-            if (partial and text in message.text) or (not partial and text == message.text):
-                if t is not None and message.type == t:
-                    return True
-                elif t is None:
-                    return True
-        else:
+            self.logger.info('%s match of the flash message %r', log_part, text)
+        matched_messages = []
+        for message in self.messages:
+            if msg_type and op(message.type in msg_type):
+                continue
+
+            if text and op((partial and text in message.text) or
+                           (not partial and text == message.text)):
+                continue
+
+            matched_messages.append(message)
+        return matched_messages
+
+    def assert_no_error(self, wait=0):
+        self.logger.info('asserting there are no error messages')
+        try:
+            msgs = wait_for(self.match_messages, func_kwargs=dict(t={'success', 'info', 'warning'},
+                                                                  inverse=True), timeout=wait)[0]
+            if msgs:
+                err = ",".join([": ".join((msg.type, msg.text)) for msg in msgs])
+                self.logger.error('%s', err)
+                raise AssertionError('assert_no_error: {}'.format(err))
+        except TimedOutError:
+            return True
+
+    def assert_message(self, text, t=None, partial=False, wait=0):
+        log_part = 'partial' if partial else 'exact'
+        try:
+            msgs = wait_for(self.match_messages, func_kwargs=dict(text=text, t=t, partial=partial),
+                            timeout=wait)[0]
+            if msgs:
+                return True
+            else:
+                raise TimedOutError
+        except TimedOutError:
             if t is not None:
                 e_text = '{}: {}'.format(t, text)
             else:
                 e_text = text
-            raise AssertionError('assert {} message: {}. \n Available messages: {}'
-                                 .format(log_part, e_text, [msg.text for msg in all_messages]))
+            raise AssertionError('assert {} match of message: {}. \n Available messages: {}'
+                                 .format(log_part, e_text, [msg.text for msg in self.messages]))
 
-    def assert_success_message(self, text, t=None, partial=False):
-        self.assert_no_error()
-        self.assert_message(text, t='success', partial=partial)
+    def assert_success_message(self, text, t=None, partial=False, wait=0):
+        self.assert_no_error(wait=wait)
+        self.assert_message(text, t=t or 'success', partial=partial, wait=wait)
 
     def __repr__(self):
         return '{}({!r})'.format(type(self).__name__, self.locator)
