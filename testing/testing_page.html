@@ -241,4 +241,27 @@ markup: https://www.patternfly.org/pattern-library/cards/aggregate-status-card/#
       });
     </script>
   </div>
+
+  <!--------------------------------- Kebab widget ------------------------------------------------>
+  <div class="dropdown  dropdown-kebab-pf">
+    <button class="btn btn-link dropdown-toggle" type="button" id="dropdownKebab"
+            data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+      <span class="fa fa-ellipsis-v"></span>
+    </button>
+    <ul class="dropdown-menu " aria-labelledby="dropdownKebab">
+      <li><a href="javascript:kebab_function('Action one')">Action one</a></li>
+      <li><a href="javascript:kebab_function('Another action')">Another action</a></li>
+      <li role="separator" class="divider"></li>
+      <li><a href="javascript:kebab_function('Separated link')">Separated link</a></li>
+    </ul>
+  </div>
+  <label id="example">N/A</label>
+<script>
+function kebab_function(actionOne) {
+document.getElementById("example").innerHTML = actionOne;
+}
+</script>
+
+
+</body>
 </html>
