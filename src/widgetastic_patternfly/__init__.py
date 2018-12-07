@@ -2271,8 +2271,10 @@ class Kebab(Widget):
         Widget.__init__(self, parent=parent, logger=logger)
 
         if id:
-            self.locator = './/div[contains(@class, "dropdown-kebab-pf") and ./button[@id={}]]'.format(
-                quote(id)
+            self.locator = (
+                './/div[contains(@class, "dropdown-kebab-pf") and ./button[@id={}]]'.format(
+                    quote(id)
+                )
             )
         elif locator:
             self.locator = locator
@@ -2320,7 +2322,7 @@ class Kebab(Widget):
         Args:
             item: Item to be selected.
             close: Whether to close the kebab after selection. If the item is a link, you may want
-                to set this to ``False``
+            to set this to `False`.
         """
         try:
             el = self.browser.element(self.ITEM.format(quote(item)))
