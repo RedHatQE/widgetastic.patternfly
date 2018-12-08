@@ -11,16 +11,24 @@ from datetime import datetime
 from operator import not_
 
 from widgetastic.exceptions import (
+    LocatorNotImplemented,
     NoSuchElementException,
+    StaleElementReferenceException,
     UnexpectedAlertPresentException,
     WidgetOperationFailed,
-    StaleElementReferenceException,
-    LocatorNotImplemented,
-    )
+)
 from widgetastic.log import call_sig
-from widgetastic.utils import ParametrizedLocator, Parameter, VersionPick, partial_match
-from widgetastic.widget import BaseInput, ClickableMixin, TextInput, Text, Widget, View, \
-    do_not_read_this_widget
+from widgetastic.utils import Parameter, ParametrizedLocator, VersionPick, partial_match
+from widgetastic.widget import (
+    BaseInput,
+    ClickableMixin,
+    Table,
+    Text,
+    TextInput,
+    View,
+    Widget,
+    do_not_read_this_widget,
+)
 from widgetastic.xpath import quote
 
 from wait_for import wait_for, wait_for_decorator, TimedOutError
@@ -2355,3 +2363,220 @@ class Kebab(Widget):
         finally:
             if close:
                 self.close()
+
+
+class SparkLineChart(Widget, ClickableMixin):
+    """Represents the Spark Line Chart from Patternfly (Data Visualization).
+
+    Args:
+        id: id of SparkLineChart
+        locator: If id not applies, you can also supply a full locator
+
+    .. code-block:: python
+        spark_line_chart = SparkLineChart(id="sparklineChart")
+    """
+    ROOT = ParametrizedLocator("{@locator}")
+    BASE_LOCATOR = ".//div[@id={}]"
+    # axis event mapping
+    RECTS = ".//*[contains(@class, 'c3-event-rects c3-event-rects-single')]//*"
+    tooltip = Text(".//div[contains(@class,'c3-tooltip-container')]")
+
+    def __init__(self, parent, id=None, locator=None, logger=None):
+        """Create the widget"""
+        Widget.__init__(self, parent, logger=logger)
+        if id:
+            self.locator = self.BASE_LOCATOR.format(quote(id))
+        elif locator:
+            self.locator = locator
+        else:
+            raise TypeError("You need to specify either id or locator")
+
+    def read(self):
+        """read all data on chart
+
+        Returns:
+            :py:class:`list` complete data on chart
+        """
+        data = []
+        for el in self.browser.elements(self.RECTS):
+            self.browser.move_to_element(el)
+            data.append(self.tooltip.read())
+        return data
+
+
+class SingleLineChart(SparkLineChart):
+    """Represents the Single Line Chart from Patternfly (Data Visualization).
+
+    Args:
+        id: id of SingleLineChart
+        locator: If id not applies, you can also supply a full locator
+
+    .. code-block:: python
+        single_line_chart = SingleLineChart(id="singleLineChart")
+    """
+    X_AXIS = ".//*[contains(@class, 'c3-axis c3-axis-x')]/*[contains(@class, 'tick')]"
+    tooltip = Table(locator=".//div[contains(@class,'c3-tooltip-container')]/table")
+
+    @property
+    def _elements(self):
+        br = self.browser
+        return {
+            x.get_attribute("textContent"): el
+            for (x, el) in zip(br.elements(self.X_AXIS), br.elements(self.RECTS))
+        }
+
+    def _get_data(self, elements):
+        data = {}
+        for el in elements:
+            self.tooltip.clear_cache()
+            self.browser.move_to_element(el)
+            raw_data = {row[0].text: row[1].text for row in self.tooltip.rows()}
+            if self.tooltip.headers:
+                tooltip_data = {self.tooltip.headers[0]: raw_data}
+            else:
+                # In the absence of a header, `:` separates x-axis points and values.
+                tooltip_data = {
+                    h[:-1] if (h[-1] == ":") else h: value for h, value in raw_data.items()
+                }
+            data.update(tooltip_data)
+        return data
+
+    def read(self):
+        """read all data on chart
+
+        Returns:
+            :py:class:`dict` complete data on chart
+        """
+        return self._get_data(self._elements.values())
+
+    def get_values(self, x_axis):
+        """data for specific x-axis point on chart
+
+        Args:
+            x_axis: x-axis point as per chart
+
+        Returns:
+            :py:class:`dict` data for selected timestamp
+        """
+        el = [self._elements.get(x_axis)]
+        return self._get_data(el)
+
+
+class LineChart(SingleLineChart):
+    """Represents the Line Chart having legends from Patternfly (Data Visualization).
+
+    Args:
+        id: id of LineChart
+        locator: If id not applies, you can also supply a full locator
+
+    .. code-block:: python
+        line_chart = LineChart(id="lineChart")
+    """
+    LEGENDS = ".//*[contains(@class, 'c3-legend-item c3-legend-item-')]"
+
+    @property
+    def _legends(self):
+        return {self.browser.text(leg): leg for leg in self.browser.elements(self.LEGENDS)}
+
+    @property
+    def legends(self):
+        """ Get all available legends
+
+        Returns:
+            :py:class:`list` all available legends
+        """
+        return list(self._legends.keys())
+
+    def legend_is_displayed(self, leg):
+        """ Check legend is available or not on Chart
+        Args:
+            leg: `str` of legend
+
+        Returns:
+            :py:class:`bool` all available legends
+        """
+        if isinstance(leg, six.string_types):
+            leg = self._legends.get(leg, None)
+
+        if leg:
+            return "c3-legend-item-hidden" not in self.browser.classes(leg)
+        else:
+            return False
+
+    def hide_all_legends(self):
+        """To hide all legends on chart"""
+        for legend in self._legends.values():
+            if self.legend_is_displayed(legend):
+                self.browser.click(legend)
+
+    def display_all_legends(self):
+        """To display all legends on chart"""
+        for legend in self._legends.values():
+            if not self.legend_is_displayed(legend):
+                self.browser.click(legend)
+
+    def display_legends(self, *legends):
+        """Display one or more legends on chart
+
+        Args:
+            legends: One or Multiple legends name
+        """
+        for legend in legends:
+            leg = self._legends.get(legend)
+            if not self.legend_is_displayed(leg):
+                self.browser.click(leg)
+
+    def hide_legends(self, *legends):
+        """Hide one or more legends on chart
+
+        Args:
+            legends: One or Multiple legends name
+        """
+        for legend in legends:
+            leg = self._legends.get(legend)
+            if self.legend_is_displayed(leg):
+                self.browser.click(leg)
+
+    def get_data_for_legends(self, *legends):
+        """data for specific legends on chart
+
+        Args:
+            legends: one or more legends
+
+        Returns:
+            :py:class:`dict` data for selected legends
+        """
+        self.hide_all_legends()
+        self.display_legends(*legends)
+        return self._get_data(self._elements.values())
+
+    def read(self):
+        """read all data on chart
+
+        Returns:
+            :py:class:`dict` complete data on chart
+        """
+        self.display_all_legends()
+        return self._get_data(self._elements.values())
+
+
+class SingleSplineChart(SingleLineChart):
+    """Represents the Single Spline Chart from Patternfly (Data Visualization)."""
+    pass
+
+
+class SplineChart(LineChart):
+    """Represents the Spline Chart having legends from Patternfly (Data Visualization)."""
+    pass
+
+
+class BarChart(SingleLineChart):
+    """Represents the Vertical/Horizontal Bar Chart from Patternfly (Data Visualization)."""
+    pass
+
+
+class GroupedBarChart(LineChart):
+    """Represents the Grouped Vertical/Horizontal/Stacked Bar Chart (Having legends)
+    from Patternfly (Data Visualization).
+    """
+    pass
