@@ -2256,12 +2256,11 @@ class Kebab(Widget):
 
     Args:
         id: Id of Kebab button
-        locator: If id not found, you can also supply a full locator
-
-        If nothing specified, first kebab available will be used
+        locator: Kebab button locator
     """
 
     ROOT = ParametrizedLocator("{@locator}")
+    BASE_LOCATOR = ".//div[contains(@class, 'dropdown-kebab-pf') and ./button[@id={}]]"
     UL = './ul[contains(@class, "dropdown-menu")]'
     BUTTON = "./button"
     ITEM = "./ul/li/a[normalize-space(.)={}]"
@@ -2271,15 +2270,11 @@ class Kebab(Widget):
         Widget.__init__(self, parent=parent, logger=logger)
 
         if id:
-            self.locator = (
-                './/div[contains(@class, "dropdown-kebab-pf") and ./button[@id={}]]'.format(
-                    quote(id)
-                )
-            )
+            self.locator = self.BASE_LOCATOR.format(quote(id))
         elif locator:
             self.locator = locator
         else:
-            self.locator = './/div[contains(@class, "dropdown-kebab-pf") and ./button][1]'
+            raise TypeError("You need to specify either id or locator")
 
     @property
     def is_opened(self):
