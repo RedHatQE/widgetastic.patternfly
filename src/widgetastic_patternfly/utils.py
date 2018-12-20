@@ -9,6 +9,10 @@ class IconConstants(Constant):
         https://www.patternfly.org/styles/icons/
     """
     ADD = 'pficon-add-circle-o'
+    ANGLE_DOWN = 'fa-angle-down'
+    ANGLE_LEFT = 'fa-angle-left'
+    ANGLE_RIGHT = 'fa-angle-right'
+    ANGLE_UP = 'fa-angle-up'
     APPLICATIONS = 'pficon-applications'
     ARROW = 'pficon-arrow'
     CLUSTER = 'pficon-cluster'
