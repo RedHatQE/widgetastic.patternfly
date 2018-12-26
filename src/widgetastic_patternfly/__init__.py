@@ -1563,6 +1563,14 @@ class Dropdown(Widget):
             raise DropdownDisabled('Dropdown "{}" is not enabled'.format(self.text))
 
     @property
+    def currently_selected(self):
+        """Returns the currently selected item text."""
+        return self.browser.text(self.BUTTON_LOCATOR, parent=self)
+
+    def read(self):
+        return self.currently_selected
+
+    @property
     def is_open(self):
         return 'open' in self.browser.classes(self)
 
@@ -1695,17 +1703,9 @@ class SelectorDropdown(Dropdown):
         self.b_attr = button_attr
         self.b_attr_value = button_attr_value
 
-    @property
-    def currently_selected(self):
-        """Returns the currently selected item text."""
-        return self.browser.text(self.BUTTON_LOCATOR, parent=self)
-
     def item_select(self, item, *args, **kwargs):
         super(SelectorDropdown, self).item_select(item, *args, **kwargs)
         wait_for(lambda: self.currently_selected == item, num_sec=3, delay=0.2)
-
-    def read(self):
-        return self.currently_selected
 
     def fill(self, value):
         if value == self.currently_selected:
