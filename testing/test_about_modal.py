@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from wait_for import wait_for
+
 from widgetastic.widget import View
 from widgetastic_patternfly import AboutModal, Button
 
@@ -6,6 +8,8 @@ from widgetastic_patternfly import AboutModal, Button
 modal_id = 'about-modal'
 title = 'Widgetastic About Modal'
 trademark = 'Widget Trademark and Copyright Information'
+
+ITEMS = {'Field1': 'Field1Value', 'Field2': 'Field2Value', 'Field3': 'Field3Value'}
 
 
 def test_modal_close(browser):
@@ -27,15 +31,16 @@ def test_modal_close(browser):
     assert view.button.title == 'Launch Modal'
     assert not view.button.disabled
     view.button.click()
+
     view.flush_widget_cache()
-    assert view.about.is_open
+    wait_for(lambda: view.about.is_open, delay=0.1, num_sec=5)
 
     assert view.about.title == title
 
     assert view.about.trademark == trademark
 
-    assert view.about.items()  # TODO: check the dictionary
+    assert view.about.items() == ITEMS
 
     # close the modal
     view.about.close()
-    assert not view.about.is_open
+    wait_for(lambda: not view.about.is_open, delay=0.1, num_sec=5)
