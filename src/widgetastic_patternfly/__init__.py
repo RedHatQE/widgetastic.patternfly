@@ -2580,3 +2580,111 @@ class GroupedBarChart(LineChart):
     from Patternfly (Data Visualization).
     """
     pass
+
+
+class ItemsList(View):
+    """Basic list-view handling class:
+    https://www.patternfly.org/pattern-library/content-views/list-view/
+    Most functionality is meant to mimic widgetastic's Table class.
+    This class is meant to work with an ItemClass that is defined elsewhere. The ItemClass
+    is a ParametrizedView that represents a single item in the list-view
+    (similar to TableRow and Table). The parameter for the ItemClass is it's index/position in
+    the list-view.
+
+    In practice, the ItemClass will be defined within a nested view e.g. in a view class we could
+    have:
+    .. code-block:: python
+        # define a view
+        class MyView(BaseLoggedInPage):
+            # define the list-view widget that's on this page
+            @View.nested
+            class item_list(ItemsList):
+                # define the item_class that the list-view uses
+                item_class = ItemClass
+            # define whatever else this page has on it ...
+
+    For an example: integration_tests/cfme/control/explorer/alerts.py::MonitorAlertsAllView
+
+    Usage is as follows assuming the list is instantiated as ``view.item_list``:
+
+    .. code-block:: python
+        # Access item by position
+        view.item_list[0].next() # => gives first item in list-view
+        # Iterate through rows
+        for item in view.item_list:
+            do_something()
+        # You can also filter items in two main ways
+        # 1) by an assoc_column that corresponds to an attribute of the item_class e.g.
+        item_list = view.item_list
+        item_list.assoc_column = 'description'
+        filtered_items = item_list[<desired_description>] # where <desired_description> is a str
+        # 2) by key-value pairs
+        item_filter = {'description': <desired_description>}
+        filtered_items = view.item_list[item_filter]
+        # note that filters can also be applied to the items() method
+        # e.g.
+        filtered_items = view.item_list.items(item_filter)
+
+    Args:
+         assoc_column: Name of an attribute/property defined in the item_class
+    """
+
+    ROOT = './/div[contains(@class,"list-view-pf-view")]'
+    ITEMS = './/div[contains(@class,"list-group-item-header")]'
+    item_class = None
+
+    def __init__(self, parent, assoc_column=None, logger=None):
+        View.__init__(self, parent, logger=logger)
+        self.assoc_column = assoc_column
+
+    def __getitem__(self, item_filter):
+        """ allows the ability to directly select AlertItem by a filter with
+            item = view.alerts_list[item_filter],
+            item_filter can be of type: string, dict, int, or None
+        """
+        return self.items(item_filter)
+
+    # properties
+    @property
+    def item_count(self):
+        """ returns how many rows are currently in the table."""
+        return len(self.browser.elements(self.ITEMS, parent=self))
+
+    # methods
+    def items(self, item_filter=None):
+        """ returns a generator for all Items matching the item_filter"""
+        start = 1
+        stop = self.item_count + 1
+        # filter via key, value pair
+        if isinstance(item_filter, dict):
+            key = item_filter.keys()[0]
+            value = item_filter.values()[0]
+            if len(item_filter) > 1:
+                self.logger.warning(
+                    "List-view filter currently not implemented for dictionaries"
+                    "greater than a length of one. Selecting the first key value pair from the dict"
+                )
+        # filter via string, note the default
+        elif isinstance(item_filter, str):
+            if self.assoc_column is None:
+                self.assoc_column = "description"  # default behavior
+            key = self.assoc_column
+            value = item_filter
+        # filter via index (note that this is used via 0-based indexing
+        # for use with the xpath of Item a 1 must be added to the index)
+        elif isinstance(item_filter, int):
+            start = item_filter + 1
+            stop = start + 1
+            key = "None"
+            value = None
+        # no filter
+        elif item_filter is None:
+            key = "None"
+            value = None
+        else:
+            raise TypeError("item_filter must be of type: string, dict, int, or None!")
+
+        for i in range(start, stop):
+            item = self.item_class(self, index=i)
+            if getattr(item, key, None) == value:
+                yield item
