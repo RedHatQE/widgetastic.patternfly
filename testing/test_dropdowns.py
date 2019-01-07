@@ -27,4 +27,11 @@ def test_kebab(browser):
     # check selection
     for item in view.kebab_menu.items:
         view.kebab_menu.item_select(item)
+        # closes by default after selection
+        assert not view.kebab_menu.is_opened
         assert item == view.kebab_output.read()
+
+    # check closing of kebab after selection
+    # override item_select close default and leave it open
+    view.kebab_menu.item_select(view.kebab_menu.items[0], close=False)
+    assert view.kebab_menu.is_opened
