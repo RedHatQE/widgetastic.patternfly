@@ -2274,3 +2274,80 @@ class AggregateStatusMiniCard(AggregateStatusCard):
         'and h2[contains(@class, "card-pf-title")]'
         '//span[normalize-space(following::text())={@name|quote}]]'
     )
+
+
+class Kebab(Widget):
+    """Patternfly Kebab menu widget
+
+    Args:
+        id: Id of Kebab button
+        locator: Kebab button locator
+    """
+
+    ROOT = ParametrizedLocator("{@locator}")
+    BASE_LOCATOR = ".//div[contains(@class, 'dropdown-kebab-pf') and ./button[@id={}]]"
+    UL = './ul[contains(@class, "dropdown-menu")]'
+    BUTTON = "./button"
+    ITEM = "./ul/li/a[normalize-space(.)={}]"
+    ITEMS = "./ul/li/a"
+
+    def __init__(self, parent, id=None, locator=None, logger=None):
+        Widget.__init__(self, parent=parent, logger=logger)
+
+        if id:
+            self.locator = self.BASE_LOCATOR.format(quote(id))
+        elif locator:
+            self.locator = locator
+        else:
+            raise TypeError("You need to specify either id or locator")
+
+    @property
+    def is_opened(self):
+        """Returns opened state of the kebab."""
+        return self.browser.is_displayed(self.UL)
+
+    @property
+    def items(self):
+        """Lists all items in the kebab.
+
+        Returns:
+            :py:class:`list` of :py:class:`str`
+        """
+        return [self.browser.text(item) for item in self.browser.elements(self.ITEMS)]
+
+    def has_item(self, item):
+        """Returns whether the items exists.
+
+        Args:
+            item: item name
+
+        Returns:
+            Boolean - True if enabled, False if not.
+        """
+        return item in self.items
+
+    def open(self):
+        """Open the kebab"""
+        if not self.is_opened:
+            self.browser.click(self.BUTTON)
+
+    def close(self):
+        """Close the kebab"""
+        if self.is_opened:
+            self.browser.click(self.BUTTON)
+
+    def item_select(self, item, close=True):
+        """Select a specific item from the kebab.
+
+        Args:
+            item: Item to be selected.
+            close: Whether to close the kebab after selection. If the item is a link, you may want
+            to set this to `False`.
+        """
+        try:
+            el = self.browser.element(self.ITEM.format(quote(item)))
+            self.open()
+            self.parent_browser.click(el)
+        finally:
+            if close:
+                self.close()
