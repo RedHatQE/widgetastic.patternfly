@@ -18,7 +18,6 @@ from widgetastic.exceptions import (
     WidgetOperationFailed,
 )
 from widgetastic.log import call_sig
-from widgetastic.utils import Parameter, ParametrizedLocator, VersionPick, partial_match
 from widgetastic.widget import (
     BaseInput,
     ClickableMixin,
@@ -28,7 +27,9 @@ from widgetastic.widget import (
     View,
     Widget,
     do_not_read_this_widget,
+    ParametrizedView
 )
+from widgetastic.utils import ParametrizedLocator, Parameter, VersionPick, partial_match
 from widgetastic.xpath import quote
 
 from wait_for import wait_for, wait_for_decorator, TimedOutError
@@ -2582,6 +2583,43 @@ class GroupedBarChart(LineChart):
     pass
 
 
+class ListItem(ParametrizedView):
+    """ Basic item object for use with ItemsList"""
+
+    PARAMETERS = ("index",)
+    ROOT = ParametrizedLocator(
+        './/div[contains(@class,"list-group-item") and position()={index}]'
+    )
+    DESCRIPTION_LOCATOR = './/span[contains(@class,"description-column")]'
+    EXPAND_LOCATOR = './/span[contains(@class,"{}")]'.format(PFIcon.icons.ANGLE_RIGHT)
+    COLLAPSE_LOCATOR = './/span[contains(@class,"{}")]'.format(PFIcon.icons.ANGLE_DOWN)
+
+    # note that this has 1-based indexing
+    index = Parameter("index")
+
+    # properties
+    @property
+    def item_list(self):
+        return self.parent
+
+    @property
+    def description(self):
+        desc = self.browser.element(self.DESCRIPTION_LOCATOR, parent=self)
+        return self.browser.text(desc)
+
+    # methods
+    def open(self):
+        expand_arrow = self.browser.element(self.EXPAND_LOCATOR, parent=self)
+        self.browser.click(expand_arrow)
+
+    def close(self):
+        collapse_arrow = self.browser.element(self.COLLAPSE_LOCATOR, parent=self)
+        self.browser.click(collapse_arrow)
+
+    def read(self):
+        return self.browser.text(self)
+
+
 class ItemsList(View):
     """Basic list-view handling class:
     https://www.patternfly.org/pattern-library/content-views/list-view/
@@ -2599,8 +2637,10 @@ class ItemsList(View):
             # define the list-view widget that's on this page
             @View.nested
             class item_list(ItemsList):
-                # define the item_class that the list-view uses
+                # define the item_class that the list-view uses (default is ListItem)
                 item_class = ItemClass
+                # define a default assoc_column that can be used for filtering
+                assoc_column = <assoc_column_str>
             # define whatever else this page has on it ...
 
     For an example: integration_tests/cfme/control/explorer/alerts.py::MonitorAlertsAllView
@@ -2609,14 +2649,14 @@ class ItemsList(View):
 
     .. code-block:: python
         # Access item by position
-        view.item_list[0].next() # => gives first item in list-view
+        view.item_list[0] # => gives first item in list-view
         # Iterate through rows
         for item in view.item_list:
             do_something()
         # You can also filter items in two main ways
         # 1) by an assoc_column that corresponds to an attribute of the item_class e.g.
         item_list = view.item_list
-        item_list.assoc_column = 'description'
+        item_list.assoc_column = 'description' # if assoc_column was not defined in item_list def
         filtered_items = item_list[<desired_description>] # where <desired_description> is a str
         # 2) by key-value pairs
         item_filter = {'description': <desired_description>}
@@ -2631,20 +2671,30 @@ class ItemsList(View):
 
     ROOT = './/div[contains(@class,"list-view-pf-view")]'
     ITEMS = './/div[contains(@class,"list-group-item-header")]'
-    item_class = None
+    item_class = ListItem  # default item_class
 
     def __init__(self, parent, assoc_column=None, logger=None):
         View.__init__(self, parent, logger=logger)
-        self.assoc_column = assoc_column
+        self._assoc_column = assoc_column
 
     def __getitem__(self, item_filter):
         """ allows the ability to directly select AlertItem by a filter with
             item = view.alerts_list[item_filter],
             item_filter can be of type: string, dict, int, or None
         """
-        return self.items(item_filter)
+        if isinstance(item_filter, int):
+            return next(self.items(item_filter))
+        elif isinstance(item_filter, str) or isinstance(item_filter, dict) or item_filter is None:
+            return self.items(item_filter)
+        else:
+            raise ValueError("item_filter is of {} but must be of type: "
+                             "str, dict, int, or None.".format(type(item_filter)))
 
     # properties
+    @property
+    def assoc_column(self):
+        return self._assoc_column or 'description'  # note the defualt
+
     @property
     def item_count(self):
         """ returns how many rows are currently in the table."""
@@ -2653,7 +2703,7 @@ class ItemsList(View):
     # methods
     def items(self, item_filter=None):
         """ returns a generator for all Items matching the item_filter"""
-        start = 1
+        start = 1  # start at 1 and not 0 since position() returns 1 as the first index
         stop = self.item_count + 1
         # filter via key, value pair
         if isinstance(item_filter, dict):
@@ -2666,8 +2716,6 @@ class ItemsList(View):
                 )
         # filter via string, note the default
         elif isinstance(item_filter, str):
-            if self.assoc_column is None:
-                self.assoc_column = "description"  # default behavior
             key = self.assoc_column
             value = item_filter
         # filter via index (note that this is used via 0-based indexing
