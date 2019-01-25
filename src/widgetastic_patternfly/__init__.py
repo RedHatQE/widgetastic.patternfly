@@ -1132,7 +1132,11 @@ class BootstrapTreeview(Widget):
 
     @property
     def root_item_count(self):
-        return len(self.browser.elements(self.ROOT_ITEMS, parent=self))
+        return len(self.root_items)
+
+    @property
+    def root_items(self):
+        return self.browser.elements(self.ROOT_ITEMS, parent=self)
 
     @property
     def root_item(self):
