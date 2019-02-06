@@ -17,6 +17,9 @@
   <!-- Include Date Picker -->
   <script type="text/javascript"    src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
   <script src="components/bootstrap-datepicker/dist/js/bootstrap-datepicker.js"></script>
+  <!-- Include bootstrap treeview -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-treeview/1.2.0/bootstrap-treeview.min.js"></script>
+  <script src="components/bootstrap-treeview/dist/js/bootstrap-treeview.js"></script>
   <title>Patternfly testing page</title>
 </head>
 <body>
@@ -255,6 +258,77 @@ markup: https://www.patternfly.org/pattern-library/cards/aggregate-status-card/#
     </ul>
   </div>
   <label id="kebab_display">N/A</label>
+  <!----------------------------- BootstrapTreeview ----------------------------------------------->
+  <div class="pf-example">
+    <div id="treeview1"></div>
+    <script src="/components/patternfly-bootstrap-treeview/dist/bootstrap-treeview.min.js"></script>
+    <script>
+      $(function() {
+        var defaultData = [
+          {
+            text: 'Parent 1',
+            href: '#parent1',
+            tags: ['4'],
+            nodes: [
+              {
+                text: 'Child 1',
+                href: '#child1',
+                icon: 'fa fa-file-o',
+                tags: ['2'],
+                nodes: [
+                  {
+                    text: 'Grandchild 1',
+                    href: '#grandchild1',
+                    icon: 'fa fa-file-o',
+                    tags: ['0']
+                  },
+                  {
+                    text: 'Grandchild 2',
+                    href: '#grandchild2',
+                    icon: 'fa fa-file-o',
+                    tags: ['0']
+                  }
+                ]
+              },
+              {
+                text: 'Child 2',
+                href: '#child2',
+                icon: 'fa fa-file-o',
+                tags: ['0']
+              }
+            ]
+          },
+          {
+            text: 'Parent 2',
+            href: '#parent2',
+            tags: ['0']
+          },
+          {
+            text: 'Parent 3',
+            href: '#parent3',
+             tags: ['0']
+          },
+          {
+            text: 'Parent 4',
+            href: '#parent4',
+            tags: ['0']
+          },
+          {
+            text: 'Parent 5',
+            href: '#parent5'  ,
+            tags: ['0']
+          }
+        ];
+        $('#treeview1').treeview({
+          collapseIcon: "fa fa-angle-down",
+          data: defaultData,
+          expandIcon: "fa fa-angle-right",
+          nodeIcon: "fa fa-folder",
+          showBorder: false
+        });
+      });
+    </script>
+  </div>
 <script>
 function kebab_function(actionOne) {
 document.getElementById("kebab_display").innerHTML = actionOne;
