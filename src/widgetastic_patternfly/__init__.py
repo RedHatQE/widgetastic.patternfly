@@ -168,6 +168,13 @@ class Button(Widget, ClickableMixin):
     def title(self):
         return self.browser.get_attribute('title', self)
 
+    def fill(self, value):
+        if value:
+            self.click()
+            return True
+        else:
+            return False
+
 
 class ViewChangeButton(Widget, ClickableMixin):
     """A PatternFly/Bootstrap view selection button in CFME 56z

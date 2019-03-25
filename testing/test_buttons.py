@@ -15,3 +15,6 @@ def test_button_click(browser):
     assert view.button1.is_displayed
     assert view.button2.is_displayed
     assert view.button3.is_displayed
+
+    FILL_DICT = {"any_button": True, "button1": True, "button2": False, "button3": False}
+    assert view.fill(FILL_DICT)
