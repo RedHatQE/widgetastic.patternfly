@@ -36,6 +36,12 @@ from wait_for import wait_for, wait_for_decorator, TimedOutError
 
 from .utils import PFIcon
 
+# py3.7 support
+try:
+    Pattern = re.Pattern
+except AttributeError:
+    Pattern = re._pattern_type
+
 
 class CandidateNotFound(Exception):
     """
