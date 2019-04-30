@@ -1319,13 +1319,13 @@ class BootstrapTreeview(Widget):
                 step = step.pick(self.browser.product_version)
         else:
             image = None
-        if not isinstance(step, six.string_types + (re._pattern_type,)):
+        if not isinstance(step, six.string_types + (Pattern,)):
             step = str(step)
         return image, step
 
     @staticmethod
     def _repr_step(image, step):
-        if isinstance(step, re._pattern_type):
+        if isinstance(step, Pattern):
             # Make it look like r'pattern'
             step_repr = 'r' + re.sub(r'^[^"\']', '', repr(step.pattern))
         else:
@@ -1352,7 +1352,7 @@ class BootstrapTreeview(Widget):
             A :py:class:`bool` if the node is correct or not.
         """
         text = self.browser.text(node)
-        if isinstance(matcher, re._pattern_type):
+        if isinstance(matcher, Pattern):
             match = matcher.match(text) is not None
         else:
             match = matcher == text
