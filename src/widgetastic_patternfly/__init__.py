@@ -1887,6 +1887,7 @@ class BreadCrumb(Widget):
     """
     ROOT = '//ol[contains(@class, "breadcrumb")]'
     ELEMENTS = './/li'
+    LINK = './/a'
 
     def __init__(self, parent, locator=None, logger=None):
         Widget.__init__(self, parent=parent, logger=logger)
@@ -1911,7 +1912,7 @@ class BreadCrumb(Widget):
     def click_location(self, name, handle_alert=True):
         br = self.browser
         location = next(loc for loc in self._path_elements if br.text(loc) == name)
-        result = br.click(location, ignore_ajax=handle_alert)
+        result = br.click(br.element(self.LINK, parent=location), ignore_ajax=handle_alert)
         if handle_alert:
             self.browser.handle_alert(wait=2.0, squash=True)
             self.browser.plugin.ensure_page_safe()
