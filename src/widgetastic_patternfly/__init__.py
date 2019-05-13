@@ -1708,6 +1708,11 @@ class Dropdown(Widget):
                 self.logger.warning('There is an unexpected alert present.')
                 pass
 
+    @property
+    def hover(self):
+        # title will act as hover for disabled Dropdown
+        return self.browser.element(self.BUTTON_LOCATOR).get_attribute("title")
+
     def __repr__(self):
         return '{}({!r})'.format(type(self).__name__, self.text)
 
