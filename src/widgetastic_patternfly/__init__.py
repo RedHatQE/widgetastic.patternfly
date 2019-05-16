@@ -1888,6 +1888,82 @@ class AboutModal(Widget):
         return items
 
 
+class Modal(View):
+    """ Patternfly modal widget
+
+        https://www.patternfly.org/pattern-library/widgets/#modal
+    """
+    ROOT = ParametrizedLocator('.//div[normalize-space(@id)={@id|quote} and '
+                               'contains(@class, "modal") and contains(@class, "fade") '
+                               'and @role="dialog"]')
+
+    def __init__(self, parent, id=None, logger=None):
+        View.__init__(self, parent, logger=logger)
+        self.id = id
+        if not self.id:
+            # if no id, we make assumptions about the modal's locator
+            self.ROOT = ('.//div[contains(@class, "modal") '
+                         'and contains(@class, "fade") and @role="dialog"]')
+
+    @property
+    def title(self):
+        return self.header.title.read()
+
+    @property
+    def is_displayed(self):
+        """ Is the modal currently open? """
+        try:
+            return "in" in self.browser.classes(self)
+        except NoSuchElementException:
+            return False
+
+    def close(self):
+        """Close the modal"""
+        self.header.close.click()
+
+    @View.nested
+    class header(View):  # noqa
+        """ The header of the modal """
+        ROOT = './/div[@class="modal-header"]'
+        close = Text(locator='.//button[@class="close"]')
+        title = Text(locator='.//h4[@class="modal-title"]')
+
+    @View.nested
+    class body(View):  # noqa
+        """ The body of the modal """
+        ROOT = './/div[@class="modal-body"]'
+        body_text = Text(locator=".//h4")
+        # form widget, this varies from modal to modal, so it is defaulted to None
+        form = None
+
+        def fill(self, value):
+            if not self.form:
+                return False
+            else:
+                return self.form.fill(value)
+
+    @View.nested
+    class footer(View):  # noqa
+        """ The footer of the modal """
+        ROOT = './/div[@class="modal-footer"]'
+        cancel = Button("Cancel")
+        submit = Button(classes=Button.PRIMARY)
+
+    def dismiss(self):
+        """ Cancel the modal"""
+        self.footer.cancel.click()
+
+    def accept(self):
+        """ Submit/Save/Accept/Delete for the modal."""
+        self.footer.submit.click()
+
+    def fill(self, value):
+        filled = self.body.fill(value)
+        if filled:
+            self.submit()
+        return filled
+
+
 class BreadCrumb(Widget):
     """ Patternfly BreadCrumb navigation control
 
