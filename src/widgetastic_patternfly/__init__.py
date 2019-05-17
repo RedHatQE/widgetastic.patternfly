@@ -1946,16 +1946,16 @@ class Modal(View):
     class footer(View):  # noqa
         """ The footer of the modal """
         ROOT = './/div[@class="modal-footer"]'
-        cancel = Button("Cancel")
-        submit = Button(classes=Button.PRIMARY)
+        dismiss = Button("Cancel")
+        accept = Button(classes=Button.PRIMARY)
 
     def dismiss(self):
         """ Cancel the modal"""
-        self.footer.cancel.click()
+        self.footer.dismiss.click()
 
     def accept(self):
         """ Submit/Save/Accept/Delete for the modal."""
-        self.footer.submit.click()
+        self.footer.accept.click()
 
     def fill(self, value):
         filled = self.body.fill(value)
