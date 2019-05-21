@@ -1893,17 +1893,18 @@ class Modal(View):
 
         https://www.patternfly.org/pattern-library/widgets/#modal
     """
-    ROOT = ParametrizedLocator('.//div[normalize-space(@id)={@id|quote} and '
-                               'contains(@class, "modal") and contains(@class, "fade") '
-                               'and @role="dialog"]')
+    ROOT = ('.//div[contains(@class, "modal") '
+            'and contains(@class, "fade") and @role="dialog"]')
 
     def __init__(self, parent, id=None, logger=None):
+        if id:
+            self.id = id
+            self.ROOT = ParametrizedLocator(
+                './/div[normalize-space(@id)={@id|quote} and '
+                'contains(@class, "modal") and contains(@class, "fade") '
+                'and @role="dialog"]')
+
         View.__init__(self, parent, logger=logger)
-        self.id = id
-        if not self.id:
-            # if no id, we make assumptions about the modal's locator
-            self.ROOT = ('.//div[contains(@class, "modal") '
-                         'and contains(@class, "fade") and @role="dialog"]')
 
     @property
     def title(self):
@@ -1933,8 +1934,6 @@ class Modal(View):
         """ The body of the modal """
         ROOT = './/div[@class="modal-body"]'
         body_text = Text(locator=".//h4")
-        # form widget, this varies from modal to modal, so it is defaulted to None
-        form = None
 
         def fill(self, value):
             if not self.form:
@@ -1956,12 +1955,6 @@ class Modal(View):
     def accept(self):
         """ Submit/Save/Accept/Delete for the modal."""
         self.footer.accept.click()
-
-    def fill(self, value):
-        filled = self.body.fill(value)
-        if filled:
-            self.submit()
-        return filled
 
 
 class BreadCrumb(Widget):
