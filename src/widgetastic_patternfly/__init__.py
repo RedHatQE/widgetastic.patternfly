@@ -1935,12 +1935,6 @@ class Modal(View):
         ROOT = './/div[@class="modal-body"]'
         body_text = Text(locator=".//h4")
 
-        def fill(self, value):
-            if not self.form:
-                return False
-            else:
-                return self.form.fill(value)
-
     @View.nested
     class footer(View):  # noqa
         """ The footer of the modal """
