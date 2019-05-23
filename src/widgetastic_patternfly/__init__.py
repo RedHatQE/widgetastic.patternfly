@@ -1911,6 +1911,11 @@ class Modal(View):
         return self.header.title.read()
 
     @property
+    def text(self):
+        """ Option for compatibility with selenium alerts """
+        return self.title
+
+    @property
     def is_displayed(self):
         """ Is the modal currently open? """
         try:
@@ -1920,7 +1925,7 @@ class Modal(View):
 
     def close(self):
         """Close the modal"""
-        self.header.close.click()
+        self.header.close.is_displayed and self.header.close.click()
 
     @View.nested
     class header(View):  # noqa
