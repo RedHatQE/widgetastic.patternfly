@@ -1897,8 +1897,8 @@ class Modal(View):
             'and contains(@class, "fade") and @role="dialog"]')
 
     def __init__(self, parent, id=None, logger=None):
+        self.id = id
         if id:
-            self.id = id
             self.ROOT = ParametrizedLocator(
                 './/div[normalize-space(@id)={@id|quote} and '
                 'contains(@class, "modal") and contains(@class, "fade") '
