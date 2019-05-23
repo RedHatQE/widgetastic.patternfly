@@ -1888,6 +1888,74 @@ class AboutModal(Widget):
         return items
 
 
+class Modal(View):
+    """ Patternfly modal widget
+
+        https://www.patternfly.org/pattern-library/widgets/#modal
+    """
+    ROOT = ('.//div[contains(@class, "modal") '
+            'and contains(@class, "fade") and @role="dialog"]')
+
+    def __init__(self, parent, id=None, logger=None):
+        self.id = id
+        if id:
+            self.ROOT = ParametrizedLocator(
+                './/div[normalize-space(@id)={@id|quote} and '
+                'contains(@class, "modal") and contains(@class, "fade") '
+                'and @role="dialog"]')
+
+        View.__init__(self, parent, logger=logger)
+
+    @property
+    def title(self):
+        return self.header.title.read()
+
+    @property
+    def text(self):
+        """ Option for compatibility with selenium alerts """
+        return self.title
+
+    @property
+    def is_displayed(self):
+        """ Is the modal currently open? """
+        try:
+            return "in" in self.browser.classes(self)
+        except NoSuchElementException:
+            return False
+
+    def close(self):
+        """Close the modal"""
+        self.header.close.is_displayed and self.header.close.click()
+
+    @View.nested
+    class header(View):  # noqa
+        """ The header of the modal """
+        ROOT = './/div[@class="modal-header"]'
+        close = Text(locator='.//button[@class="close"]')
+        title = Text(locator='.//h4[@class="modal-title"]')
+
+    @View.nested
+    class body(View):  # noqa
+        """ The body of the modal """
+        ROOT = './/div[@class="modal-body"]'
+        body_text = Text(locator=".//h4")
+
+    @View.nested
+    class footer(View):  # noqa
+        """ The footer of the modal """
+        ROOT = './/div[@class="modal-footer"]'
+        dismiss = Button("Cancel")
+        accept = Button(classes=Button.PRIMARY)
+
+    def dismiss(self):
+        """ Cancel the modal"""
+        self.footer.dismiss.click()
+
+    def accept(self):
+        """ Submit/Save/Accept/Delete for the modal."""
+        self.footer.accept.click()
+
+
 class BreadCrumb(Widget):
     """ Patternfly BreadCrumb navigation control
 
