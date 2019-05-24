@@ -1919,7 +1919,8 @@ class Modal(View):
     def is_displayed(self):
         """ Is the modal currently open? """
         try:
-            return "in" in self.browser.classes(self)
+            classes = self.browser.get_attribute('class', locator=self, check_safe=False)
+            return "in" in classes.split(' ')
         except NoSuchElementException:
             return False
 
