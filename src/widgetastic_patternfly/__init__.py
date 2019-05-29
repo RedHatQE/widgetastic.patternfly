@@ -507,10 +507,7 @@ class BootstrapNav(Widget):
     def all_options(self):
         """A property to return the list of options available in the BootstrapNav"""
         b = self.browser
-        return [
-            b.text(el)
-            for el in b.elements(self.ITEM_LOCATOR)
-        ]
+        return [b.text(el) for el in b.elements(self.ITEM_LOCATOR)]
 
     def read(self):
         """Implement read()"""
