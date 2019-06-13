@@ -480,6 +480,7 @@ class BootstrapNav(Widget):
     See http://getbootstrap.com/components/#nav for more information on Bootstrap nav components.
     """
     ROOT = ParametrizedLocator('{@locator}')
+    ITEM_LOCATOR = './/li'
     CURRENTLY_SELECTED = './/li[contains(@class, "active")]/a'
     TEXT_MATCHING = './/li/a[text()={txt}]'
     PARTIAL_TEXT = './/li/a[contains(normalize-space(.), {txt})]'
@@ -501,6 +502,12 @@ class BootstrapNav(Widget):
     def currently_selected(self):
         """A property to return the currently selected menu item"""
         return [self.browser.text(el) for el in self.browser.elements(self.CURRENTLY_SELECTED)]
+
+    @property
+    def all_options(self):
+        """A property to return the list of options available in the BootstrapNav"""
+        b = self.browser
+        return [b.text(el) for el in b.elements(self.ITEM_LOCATOR)]
 
     def read(self):
         """Implement read()"""
