@@ -181,6 +181,15 @@ class Button(Widget, ClickableMixin):
         else:
             return False
 
+    @property
+    def text(self):
+        """Return the element text, not the passed text"""
+        return self.browser.text(self)
+
+    def read(self):
+        """Widget.read override, use text"""
+        return self.text
+
 
 class ViewChangeButton(Widget, ClickableMixin):
     """A PatternFly/Bootstrap view selection button in CFME 56z
