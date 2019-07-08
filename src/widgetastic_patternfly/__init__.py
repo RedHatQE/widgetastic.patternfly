@@ -374,6 +374,7 @@ class FlashMessage(Widget):
 
 class NavDropdown(Widget, ClickableMixin):
     """The dropdowns used eg. in navigation. Usually located in the top navbar."""
+    EXPAND_LOCATOR = './a/span[contains(@class, "caret")]'
 
     def __init__(self, parent, locator, logger=None):
         Widget.__init__(self, parent, logger=logger)
@@ -388,7 +389,7 @@ class NavDropdown(Widget, ClickableMixin):
     @property
     def expandable(self):
         try:
-            self.browser.element('./a/span[contains(@class, "caret")]', parent=self)
+            self.browser.element(self.EXPAND_LOCATOR)
         except NoSuchElementException:
             return False
         else:
