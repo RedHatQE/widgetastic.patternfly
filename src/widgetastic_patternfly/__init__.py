@@ -374,14 +374,15 @@ class FlashMessage(Widget):
 
 class NavDropdown(Widget, ClickableMixin):
     """The dropdowns used eg. in navigation. Usually located in the top navbar."""
-    EXPAND_LOCATOR = './a/span[contains(@class, "caret")]'
+    EXPAND_LOCATOR = ('./a["aria-expanded" and '
+                      '"aria-haspopup" and '
+                      'contains(@class, "dropdown-toggle")]')
 
-    def __init__(self, parent, locator, logger=None):
+    ROOT = ParametrizedLocator('//nav//li[//a[@id={@id|quote}] and contains(@class, "dropdown")]')
+
+    def __init__(self, parent, id, logger=None):
         Widget.__init__(self, parent, logger=logger)
-        self.locator = locator
-
-    def __locator__(self):
-        return self.locator
+        self.id = id
 
     def read(self):
         return self.text
