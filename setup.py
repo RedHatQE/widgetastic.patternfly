@@ -12,19 +12,8 @@ setup(
     long_description=codecs.open('README.rst', mode='r', encoding='utf-8').read(),
     license="Apache license",
     url="https://github.com/RedHatQE/widgetastic.patternfly",
-    packages=find_packages('src'),
-    package_dir={'': 'src'},
-    install_requires=[
-        'widgetastic.core>=0.10.0',
-        'aenum==2.1.2'
-    ],
-    setup_requires=[
-        'setuptools_scm',
-    ],
     classifiers=[
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
