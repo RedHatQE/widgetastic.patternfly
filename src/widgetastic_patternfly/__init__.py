@@ -377,8 +377,11 @@ class NavDropdown(Widget, ClickableMixin):
     EXPAND_LOCATOR = ('./a["aria-expanded" and '
                       '"aria-haspopup" and '
                       'contains(@class, "dropdown-toggle")]')
+    TEXT_LOCATOR = './a//p'
 
-    ROOT = ParametrizedLocator('//nav//li[//a[@id={@id|quote}] and contains(@class, "dropdown")]')
+    ROOT = ParametrizedLocator('//nav'
+                               '//li[.//a[@id={@id|quote} and contains(@class, "dropdown-toggle")]'
+                               ' and contains(@class, "dropdown")]')
 
     def __init__(self, parent, id, logger=None):
         Widget.__init__(self, parent, logger=logger)
@@ -429,7 +432,8 @@ class NavDropdown(Widget, ClickableMixin):
     @property
     def text(self):
         try:
-            return self.browser.text('./a/p', parent=self)
+            el = self.browser.element(self.TEXT_LOCATOR)
+            return self.browser.text(el, parent=self)
         except NoSuchElementException:
             return None
 
