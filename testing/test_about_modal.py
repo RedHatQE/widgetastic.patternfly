@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import pytest
 from wait_for import wait_for
 
 from widgetastic.widget import View
@@ -12,7 +13,8 @@ trademark = 'Widget Trademark and Copyright Information'
 ITEMS = {'Field1': 'Field1Value', 'Field2': 'Field2Value', 'Field3': 'Field3Value'}
 
 
-def test_modal_close(browser):
+@pytest.mark.parametrize('locator', [modal_id, None], ids=['Modal_With_ID', 'Modal_Without_ID'])
+def test_modal_close(browser, locator):
     """
     Test the about modal, including all methods/properties
 
@@ -22,7 +24,7 @@ def test_modal_close(browser):
     class TestView(View):
         """ Dummy page matching testing_page.html elements"""
         button = Button('Launch about modal')
-        about = AboutModal(id=modal_id)
+        about = AboutModal(id=locator)
 
     view = TestView(browser)
     assert not view.about.is_open

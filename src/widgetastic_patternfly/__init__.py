@@ -383,7 +383,8 @@ class NavDropdown(Widget, ClickableMixin):
                                '//li[.//a[@id={@id|quote} and contains(@class, "dropdown-toggle")]'
                                ' and contains(@class, "dropdown")]')
 
-    def __init__(self, parent, id, logger=None):
+    def __init__(self, parent, id=None, logger=None):
+        """id is optional to allow for easy subclass change of ROOT"""
         Widget.__init__(self, parent, logger=logger)
         self.id = id
 
@@ -1857,19 +1858,31 @@ class AboutModal(Widget):
 
     Provides a close method
     """
-    ROOT = ParametrizedLocator('//div[normalize-space(@id)={@id|quote} and '
-                               'contains(@class, "modal") and contains(@class, "fade")]')
+    # ROOT_LOC only used when id is not passed to constructor
+    ROOT_LOC = ('//div[contains(@class, "modal") and contains(@class, "fade") '
+                'and .//div[contains(@class, "about-modal-pf")]]')
     CLOSE_LOC = './/div[@class="modal-header"]/button[@class="close" and @data-dismiss="modal"]'
     ITEMS_LOC = './/div[@class="modal-body"]/div[@class="product-versions-pf"]/ul/li'
     # These are relative to the <li> elements under ITEMS_LOC above
     LABEL_LOC = './strong'
     # widgets for the title+trademark lines
-    title_widget = Text(locator='.//div[@class="modal-body"]/h2')
-    trade_widget = Text(locator='.//div[@class="modal-body"]/div[@class="trademark-pf"]')
+    TITLE_LOC = './/div[@class="modal-body"]/*[self::h1 or self::h2]'
+    TRADEMARK_LOC = './/div[@class="modal-body"]/div[@class="trademark-pf"]'
 
-    def __init__(self, parent, id, logger=None):
+    def __init__(self, parent, id=None, logger=None):
         Widget.__init__(self, parent, logger=logger)
         self.id = id
+
+    def __locator__(self):
+        """If id was passed, parametrize it into a locator, otherwise use ROOT_LOC"""
+        if self.id is not None:
+            return ('//div[normalize-space(@id)="{}" and '
+                    'contains(@class, "modal") and '
+                    'contains(@class, "fade") and '
+                    './/div[contains(@class, "about-modal-pf")]]'
+                    .format(self.id))
+        else:
+            return self.ROOT_LOC
 
     @property
     def is_open(self):
@@ -1886,11 +1899,11 @@ class AboutModal(Widget):
 
     @property
     def title(self):
-        return self.title_widget.read()
+        return self.browser.text(self.browser.element(self.TITLE_LOC, parent=self))
 
     @property
     def trademark(self):
-        return self.trade_widget.read()
+        return self.browser.text(self.browser.element(self.TRADEMARK_LOC, parent=self))
 
     def items(self):
         """
