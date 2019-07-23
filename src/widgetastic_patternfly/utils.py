@@ -23,6 +23,7 @@ class IconConstants(Constant):
     OK = 'pficon-ok'
     WARNING = 'pficon-warning-triangle-o'
     REFRESH = 'fa-refresh'
+    USER = 'pficon-user'
 
     @classmethod
     def icon_strings(cls):
