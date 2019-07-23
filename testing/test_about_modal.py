@@ -35,7 +35,7 @@ def test_modal_close(browser, locator):
     view.button.click()
 
     view.flush_widget_cache()
-    wait_for(lambda: view.about.is_open, delay=0.1, num_sec=5)
+    wait_for(lambda: view.about.is_open, delay=0.2, num_sec=10)
 
     assert view.about.title == title
 
@@ -45,4 +45,4 @@ def test_modal_close(browser, locator):
 
     # close the modal
     view.about.close()
-    wait_for(lambda: not view.about.is_open, delay=0.1, num_sec=5)
+    wait_for(lambda: not view.about.is_open, delay=0.1, num_sec=10)
