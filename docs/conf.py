@@ -26,8 +26,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = __distribution.project_name
-copyright = u'2016-{}, Milan Falešník (Apache license 2)'.format(datetime.now().year)
-author = u'Milan Falešník'
+copyright = '2016-{}, Milan Falešník (Apache license 2)'.format(datetime.now().year)
+author = 'Milan Falešník'
 
 
 # The full version, including alpha/beta/rc tags.

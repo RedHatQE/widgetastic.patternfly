@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """This package contains classes that represent widgets in Patternfly for Widgetastic"""
-from __future__ import unicode_literals
+
 
 import re
-import six
 import time
 from cached_property import cached_property
 from collections import namedtuple
@@ -36,7 +35,7 @@ from wait_for import wait_for, wait_for_decorator, TimedOutError
 
 from .utils import PFIcon
 
-# py3.7 support
+# py3.7+ module change
 try:
     Pattern = re.Pattern
 except AttributeError:
@@ -52,7 +51,7 @@ class CandidateNotFound(Exception):
 
     @property
     def message(self):
-        return ", ".join("{}: {}".format(k, v) for k, v in six.iteritems(self.d))
+        return ", ".join("{}: {}".format(k, v) for k, v in self.d.items())
 
     def __str__(self):
         return self.message
@@ -140,7 +139,9 @@ class Button(Widget, ClickableMixin):
         else:
             # Join the kwargs, if any
             self.locator_conditions = ' and '.join(
-                '@{}={}'.format(attr, quote(value)) for attr, value in kwargs.items())
+                ['@{}={}'.format(attr, quote(value))
+                 for attr, value in kwargs.items()]
+            )
 
         if classes:
             if self.locator_conditions:
@@ -647,7 +648,7 @@ class VerticalNavigation(Widget):
             result[item] = sub_items or None
         if result and all(value is None for value in result.values()):
             # If there are no child nodes, then just make it a list
-            result = list(six.iterkeys(result))
+            result = list(result)  # list of keys
         return result
 
     @property
@@ -1342,7 +1343,7 @@ class BootstrapTreeview(Widget):
                 step = step.pick(self.browser.product_version)
         else:
             image = None
-        if not isinstance(step, six.string_types + (Pattern,)):
+        if not isinstance(step, (str, Pattern)):
             step = str(step)
         return image, step
 
@@ -1434,7 +1435,7 @@ class BootstrapTreeview(Widget):
                             self.tree_id),
                     'path': path,
                     'cause': 'Could not expand the {} node'.format(self._repr_step(image, step))})
-            if isinstance(step, six.string_types):
+            if isinstance(step, str):
                 # To speed up the search when having a string to match, pick up items with that text
                 child_items = self.child_items_with_text(node, step)
             else:
@@ -2620,7 +2621,7 @@ class LineChart(SingleLineChart):
         Returns:
             :py:class:`bool` all available legends
         """
-        if isinstance(leg, six.string_types):
+        if isinstance(leg, str):
             leg = self._legends.get(leg, None)
 
         if leg:
@@ -2831,8 +2832,7 @@ class ItemsList(View):
         stop = self.item_count + 1
         # filter via key, value pair
         if isinstance(item_filter, dict):
-            key = item_filter.keys()[0]
-            value = item_filter.values()[0]
+            key, value = next(item_filter.items())
             if len(item_filter) > 1:
                 self.logger.warning(
                     "List-view filter currently not implemented for dictionaries"
