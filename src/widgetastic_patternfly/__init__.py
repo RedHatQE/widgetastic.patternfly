@@ -1888,11 +1888,10 @@ class AboutModal(Widget):
     @property
     def is_open(self):
         """Is the about modal displayed right now"""
-        return 'in' in self.browser.classes(self)
-
-    @property
-    def is_displayed(self):
-        return self.is_open
+        try:
+            return 'in' in self.browser.classes(self)
+        except NoSuchElementException:
+            return False
 
     def close(self):
         """Close the modal"""
