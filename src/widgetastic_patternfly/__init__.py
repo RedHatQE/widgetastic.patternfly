@@ -562,6 +562,9 @@ class BootstrapNav(Widget):
         """Check if an item is disabled"""
         if text:
             # Check if an item is disabled based on the text of that item
+            if isinstance(text, partial_match):
+                partial_text = text.item
+                text = self.browser.element(self.PARTIAL_TEXT.format(txt=quote(partial_text))).text
             xpath = self.TEXT_DISABLED.format(txt=quote(text))
         elif self.VALID_ATTRS & set(kwargs.keys()):
             # Check if an item is disabled based on an attribute, if it is one of the VALID_ATTRS
