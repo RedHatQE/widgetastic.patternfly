@@ -2028,7 +2028,11 @@ class BreadCrumb(Widget):
 
     def click_location(self, name, handle_alert=True):
         br = self.browser
-        location = next(loc for loc in self._path_elements if br.text(loc) == name)
+        try:
+            location = next(loc for loc in self._path_elements if br.text(loc) == name)
+        except StopIteration:
+            self.logger.exception(f'Given location name [{name}] not found')
+            raise WidgetOperationFailed('Unable to click breadcrumb location, location not found')
         result = br.click(br.element(self.LINK, parent=location), ignore_ajax=handle_alert)
         if handle_alert:
             self.browser.handle_alert(wait=2.0, squash=True)
