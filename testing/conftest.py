@@ -8,6 +8,7 @@ import os
 import sys
 
 from selenium import webdriver
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 from widgetastic.browser import Browser
 
@@ -21,12 +22,21 @@ class CustomBrowser(Browser):
 
 
 @pytest.fixture(scope='session')
-def selenium(request):
-    options = webdriver.FirefoxOptions()
-    options.headless = True
-    driver = webdriver.Firefox(firefox_options=options)
+def browser_name():
+    return os.environ['BROWSER']
+
+
+@pytest.fixture(scope='session')
+def selenium(request, browser_name):
+    if browser_name == 'firefox':
+        driver = webdriver.Remote(desired_capabilities=DesiredCapabilities.FIREFOX)
+    elif browser_name == 'chrome':
+        caps = DesiredCapabilities.CHROME.copy()
+        caps['chromeOptions'] = {'args': ['disable-dev-shm-usage', 'no-sandbox']}
+        driver = webdriver.Remote(desired_capabilities=caps)
+    else:
+        sys.exit('Please provide BROWSER environment variable')
     request.addfinalizer(driver.quit)
-    driver.maximize_window()
     global selenium_browser
     selenium_browser = driver
     return driver

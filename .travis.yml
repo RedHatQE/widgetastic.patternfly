@@ -1,17 +1,16 @@
+services:
+  - docker
+env:
+  - BROWSER=firefox
+  - BROWSER=chrome
 language: python
 dist: xenial
 python:
 - '3.5'
 - '3.6'
 - '3.7'
-addons:
-  firefox: latest-esr
 before_install:
-  # install geckdriver for firefox
-  - wget https://github.com/mozilla/geckodriver/releases/download/v0.22.0/geckodriver-v0.22.0-linux64.tar.gz
-  - mkdir geckodriver
-  - tar -xzvf geckodriver-v0.22.0-linux64.tar.gz -C geckodriver
-  - export PATH=$PATH:$PWD/geckodriver
+  - docker run -d -p 4444:4444 --network="host" cfmeqe/cfme_sel_stable
 install:
   - pip install tox-travis
 script: tox
