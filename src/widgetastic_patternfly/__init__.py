@@ -712,7 +712,7 @@ class VerticalNavigation(Widget):
                 self.browser.click(link, ignore_ajax=True, check_safe=False)
                 if handle_alert:
                     self.browser.handle_alert(wait=2.0, squash=True)
-                    
+
     def get_child_div_for(self, *levels):
         current = self
         for level in levels:
