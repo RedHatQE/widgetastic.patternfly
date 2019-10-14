@@ -661,14 +661,15 @@ class VerticalNavigation(Widget):
             for el
             in self.browser.elements(self.CURRENTLY_SELECTED, parent=self)]
 
-    def select(self, *levels, **kwargs):
+    def select(self, *levels, handle_alert=True, **kwargs):
         """Select an item in the navigation.
-
         Args:
             *levels: Items to be clicked in the navigation.
-
         Keywords:
-            anyway: Default behaviour is that if you try selecting an already selected item, it will
+            handle_alert(bool): If set to True, will call self.browser.handle_alert to handle
+            alert popups.
+            anyway: Default behaviour is that if you try selecting an already selected item,
+            it will
                 not do it. If you pass ``anyway=True``, it will click it anyway.
         """
         levels = list(levels)
@@ -709,8 +710,9 @@ class VerticalNavigation(Widget):
                 self.logger.debug('finishing the menu selection by clicking on %s', level)
                 # No safety check because previous command did it
                 self.browser.click(link, ignore_ajax=True, check_safe=False)
-                self.browser.handle_alert(wait=2.0, squash=True)
-
+                if handle_alert:
+                    self.browser.handle_alert(wait=2.0, squash=True)
+                    
     def get_child_div_for(self, *levels):
         current = self
         for level in levels:
