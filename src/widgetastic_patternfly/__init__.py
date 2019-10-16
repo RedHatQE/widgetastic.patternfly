@@ -669,8 +669,7 @@ class VerticalNavigation(Widget):
             handle_alert(bool): If set to True, will call self.browser.handle_alert to handle
             alert popups.
             anyway: Default behaviour is that if you try selecting an already selected item,
-            it will
-                not do it. If you pass ``anyway=True``, it will click it anyway.
+            it will not do it. If you pass ``anyway=True``, it will click it anyway.
         """
         levels = list(levels)
         self.logger.info('Selecting %r in navigation', levels)
