@@ -661,19 +661,18 @@ class VerticalNavigation(Widget):
             for el
             in self.browser.elements(self.CURRENTLY_SELECTED, parent=self)]
 
-    def select(self, *levels, handle_alert=True, **kwargs):
+    def select(self, *levels, handle_alert=True, anyway=True):
         """Select an item in the navigation.
         Args:
             *levels: Items to be clicked in the navigation.
         Keywords:
             handle_alert(bool): If set to True, will call self.browser.handle_alert to handle
             alert popups.
-            anyway: Default behaviour is that if you try selecting an already selected item,
-            it will not do it. If you pass ``anyway=True``, it will click it anyway.
+            anyway(bool): Default behaviour is that if you try selecting an already selected item,
+            it will click it anyway. If you pass ``anyway=False``, it won't click it.
         """
         levels = list(levels)
         self.logger.info('Selecting %r in navigation', levels)
-        anyway = kwargs.pop('anyway', True)
         if levels == self.currently_selected and not anyway:
             return
 
