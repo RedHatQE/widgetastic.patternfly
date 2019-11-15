@@ -219,15 +219,26 @@ class Input(TextInput):
 
     Has some additional methods.
     """
+    WARNING_LOCATOR = "./following-sibling::div"
+    HELP_BLOCK_LOCATOR = "./following-sibling::span"
+
     @property
     def help_block(self):
         e = self.browser.element(self)
         try:
-            help_block = self.browser.element('./following-sibling::span', parent=e)
+            help_block = self.browser.element(self.HELP_BLOCK_LOCATOR, parent=e)
         except NoSuchElementException:
             return None
         else:
             return self.browser.text(help_block)
+
+    @property
+    def warning(self):
+        try:
+            self.browser.wait_for_element(self.WARNING_LOCATOR, timeout=3)
+            return self.browser.text(self.WARNING_LOCATOR)
+        except NoSuchElementException:
+            return None
 
 
 class FlashMessages(Widget):
