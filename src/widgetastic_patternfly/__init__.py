@@ -513,7 +513,7 @@ class BootstrapNav(Widget):
     TEXT_MATCHING = './/li/a[text()={txt}]'
     PARTIAL_TEXT = './/li/a[contains(normalize-space(.), {txt})]'
     ATTR_MATCHING = './/li/a[@{attr}={txt}]'
-    TEXT_DISABLED = './/li[contains(@class, "disabled")]/a[text()={txt}]'
+    TEXT_DISABLED = './/li[contains(@class, "disabled")]/a[contains(text(), {txt})]'
     ATTR_DISABLED = './/li[contains(@class, "disabled")]/a[@{attr}={txt}]'
     VALID_ATTRS = {'href', 'title', 'class', 'id'}
 
