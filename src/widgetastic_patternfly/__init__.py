@@ -274,25 +274,55 @@ class FlashMessages(Widget):
             message.dismiss()
 
     def match_messages(self, text=None, t=None, partial=False, inverse=False):
+        """
+            Return a list of flash messages matching the specified alert text and type(s)
+
+            Args:
+                text: text to compare against each flash message's text attribute. This parameter
+                 can be either a string, in which case normal string comparison will be performed,
+                 or a compiled regular expression, in which case it will use re.match()
+                 (default: None).
+
+                t: an alert type string or tuple/list/set of types, to compare against each flash
+                 message's type attribute (default: None).
+
+                partial: If partial is False, and if `text` is a string, then a message will be
+                 considered a match if the message's text attribute and `text` are equal. If partial
+                 is True, then `text` needs only be contained in the message's text to be considered
+                 a match. This argument has no effect if `text` is a compiled regular expression
+                 (default: False).
+
+                inverse: If inverse is False, then the match is performed as described above. If
+                 inverse is True, then the matching logic is inverted, and only messages that fail
+                 to match will be returned.
+
+            Returns:
+                List of matching FlashMessage objects.
+        """
         msg_type = t if isinstance(t, (tuple, list, set, type(None))) else (t, )
-        # below is a little bit tricky statement
-        # if inverse is True, further comparison statements will be treated as is
-        # and inverted by not_ otherwise
+        # If inverse is True, further comparison statements will be treated as is.
+        # Otherwise, they will be inverted by not_().
         op = bool if inverse else not_
-        log_part = 'partial' if partial else 'exact'
-        if t is not None:
-            self.logger.info('%s match of the flash message %r of type %r', log_part, text, t)
+        log_inverse = "inverse " if inverse else ""
+        log_type = f", type: {t!r}" if msg_type else ""
+        if isinstance(text, Pattern):
+            log_part = "pattern"
+            log_text = f", pattern: {text.pattern!r}"
         else:
-            self.logger.info('%s match of the flash message %r', log_part, text)
+            log_part = "partial" if partial else "exact"
+            log_text = f", text: {text!r}" if text else ""
+        log_msg = f"Performing {log_inverse}{log_part} match of flash messages{log_text}{log_type}"
+        self.logger.info(log_msg)
+
         matched_messages = []
         for message in self.messages:
             if msg_type and op(message.type in msg_type):
                 continue
-
-            if text and op((partial and text in message.text) or
-                           (not partial and text == message.text)):
+            if isinstance(text, Pattern) and op(text.match(message.text)):
                 continue
-
+            if isinstance(text, str) and op((partial and text in message.text) or
+                                            (not partial and text == message.text)):
+                continue
             matched_messages.append(message)
         return matched_messages
 
@@ -309,7 +339,13 @@ class FlashMessages(Widget):
             return True
 
     def assert_message(self, text, t=None, partial=False, wait=0):
-        log_part = 'partial' if partial else 'exact'
+        # If text is a compiled regex instead of a string, log it as a pattern match.
+        if isinstance(text, Pattern):
+            log_part = 'pattern'
+            log_text = text.pattern
+        else:
+            log_part = 'partial' if partial else 'exact'
+            log_text = text
         try:
             msgs = wait_for(self.match_messages, func_kwargs=dict(text=text, t=t, partial=partial),
                             timeout=wait)[0]
@@ -319,11 +355,13 @@ class FlashMessages(Widget):
                 raise TimedOutError
         except TimedOutError:
             if t is not None:
-                e_text = '{}: {}'.format(t, text)
+                e_text = f"{t}: {log_text}"
             else:
-                e_text = text
-            raise AssertionError('assert {} match of message: {}. \n Available messages: {}'
-                                 .format(log_part, e_text, [msg.text for msg in self.messages]))
+                e_text = log_text
+            msg_text = [msg.text for msg in self.messages]
+            log_msg = (f'assert {log_part} match of message: {e_text}.\n '
+                       f'Available messages: {msg_text}')
+            raise AssertionError(log_msg)
 
     def assert_success_message(self, text, t=None, partial=False, wait=0):
         self.assert_no_error(wait=wait)
@@ -1284,7 +1322,7 @@ class BootstrapTreeview(Widget):
         except NoSuchElementException:
             raise CandidateNotFound({
                 'message':
-                    'Could not find the item with nodeid {} in Boostrap tree {}'.format(
+                    'Could not find the item with nodeid {} in Bootstrap tree {}'.format(
                         nodeid,
                         self.tree_id),
                 'path': '',
@@ -1430,7 +1468,7 @@ class BootstrapTreeview(Widget):
             if not self.validate_node(node, step, image):
                 raise CandidateNotFound({
                     'message':
-                        'Could not find the item {} in Boostrap tree {}'.format(
+                        'Could not find the item {} in Bootstrap tree {}'.format(
                             self.pretty_path(steps_tried),
                             self.tree_id),
                     'path': path,
@@ -1444,7 +1482,7 @@ class BootstrapTreeview(Widget):
             if node is not None and not self.expand_node(self.get_nodeid(node)):
                 raise CandidateNotFound({
                     'message':
-                        'Could not find the item {} in Boostrap tree {}'.format(
+                        'Could not find the item {} in Bootstrap tree {}'.format(
                             self.pretty_path(steps_tried),
                             self.tree_id),
                     'path': path,
@@ -1462,7 +1500,7 @@ class BootstrapTreeview(Widget):
             else:
                 raise CandidateNotFound({
                     'message':
-                        'Could not find the item {} in Boostrap tree {}'.format(
+                        'Could not find the item {} in Bootstrap tree {}'.format(
                             self.pretty_path(steps_tried),
                             self.tree_id),
                     'path': path,

@@ -76,7 +76,7 @@
   </div>
 
 
-<!--------------------------------- Bootstrap-Datepicker------------------------------------------>
+  <!--------------------------------- Bootstrap-Datepicker------------------------------------------>
   <div class="datepicker_container" align="center" style="width: 300px; text-align:center">
     <div class="datepicker_readonly">
       <label class="control-label " for="date_readonly">
@@ -126,11 +126,11 @@
       });
   })
   </script>
-<!--------------------------------- Bootstrap-Datepicker End ------------------------------------>
+  <!--------------------------------- Bootstrap-Datepicker End ------------------------------------>
 
-<!--------------------------------- AggregateStatusCard ------------------------------------------>
-<!-- from reference
-markup: https://www.patternfly.org/pattern-library/cards/aggregate-status-card/#example-code-1 -->
+  <!--------------------------------- AggregateStatusCard ------------------------------------------>
+  <!-- from reference
+  markup: https://www.patternfly.org/pattern-library/cards/aggregate-status-card/#example-code-1 -->
   <div class="cards-pf">
     <div class="container-fluid container-cards-pf">
       <div class="row row-cards-pf">
@@ -785,5 +785,54 @@ document.getElementById("kebab_display").innerHTML = actionOne;
     </ul>
   </div>
   <!--End BootstrapNav------------------------------------->
+  <!--Begin FlashMessages------------------------------------->
+  <div id="flash_msg_div" style="">
+    <div class="flash_text_div">
+      <div class="alert alert-success alert-dismissable">
+        <button class="close" data-dismiss="alert">
+          <span class="pficon pficon-close"></span>
+        </button>
+        <span class="pficon pficon-ok"></span>
+        <strong>Retirement date set to 12/31/19 15:55 UTC</strong>
+      </div>
+    </div>
+    <div class="flash_text_div">
+      <div class="alert alert-success alert-dismissable">
+        <button class="close" data-dismiss="alert">
+          <span class="pficon pficon-close"></span>
+        </button>
+        <span class="pficon pficon-ok"></span>
+        <strong>Retirement date removed</strong>
+      </div>
+    </div>
+    <div class="flash_text_div">
+      <div class="alert alert-warning">
+        <button class="close" data-dismiss="alert">
+          <span class="pficon pficon-close"></span>
+        </button>
+        <span class="pficon pficon-warning-triangle-o"></span>
+        <strong>All changes have been reset</strong>
+      </div>
+    </div>
+    <div class="flash_text_div">
+      <div class="alert alert-success alert-dismissable">
+        <button class="close" data-dismiss="alert">
+          <span class="pficon pficon-close"></span>
+        </button>
+        <span class="pficon pficon-ok"></span>
+        <strong>Set/remove retirement date was cancelled by the user</strong>
+      </div>
+    </div>
+    <div class="flash_text_div">
+      <div class="alert alert-success alert-dismissable">
+        <button class="close" data-dismiss="alert">
+          <span class="pficon pficon-close"></span>
+        </button>
+        <span class="pficon pficon-ok"></span>
+        <strong>Retirement initiated for 1 VM and Instance from the CFME Database</strong>
+      </div>
+    </div>
+  </div>
+  <!--End FlashMessages------------------------------------->
 </body>
 </html>
