@@ -16,6 +16,7 @@ def test_bootstrap_nav(browser):
         "ALL (Default)",
         "Environment / Dev",
         "Environment / Prod",
+        "UAT",
         "Environment / UAT",
         "",
     ]
@@ -25,5 +26,3 @@ def test_bootstrap_nav(browser):
     assert view.nav.has_item(text='Environment / Prod')
     # assert if partial match works for is_disabled
     assert view.nav.is_disabled(text=partial_match("UAT"))
-    # assert if is_disabled works properly
-    assert view.nav.is_disabled(text="Environment / UAT")
