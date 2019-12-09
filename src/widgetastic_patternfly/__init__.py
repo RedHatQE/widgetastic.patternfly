@@ -241,187 +241,6 @@ class Input(TextInput):
             return None
 
 
-class FlashMessages(Widget):
-    """Represents the block of flash messages."""
-    def __init__(self, parent, locator, logger=None):
-        Widget.__init__(self, parent, logger=logger)
-        self.locator = locator
-
-    def __locator__(self):
-        return self.locator
-
-    def read(self):
-        result = []
-        for message in self.messages:
-            result.append(message.read())
-        return result
-
-    @property
-    def messages(self):
-        result = []
-        msg_xpath = ('.//div[@id="flash_text_div" or '
-                     'contains(@class, "flash_text_div")]/div[contains(@class, "alert")]')
-        try:
-
-            for flash_div in self.browser.elements(msg_xpath, parent=self, check_visibility=True):
-                result.append(FlashMessage(self, flash_div, logger=self.logger))
-        except NoSuchElementException:
-            pass
-        return result
-
-    def dismiss(self):
-        for message in self.messages:
-            message.dismiss()
-
-    def match_messages(self, text=None, t=None, partial=False, inverse=False):
-        """
-            Return a list of flash messages matching the specified alert text and type(s)
-
-            Args:
-                text: text to compare against each flash message's text attribute. This parameter
-                 can be either a string, in which case normal string comparison will be performed,
-                 or a compiled regular expression, in which case it will use re.match()
-                 (default: None).
-
-                t: an alert type string or tuple/list/set of types, to compare against each flash
-                 message's type attribute (default: None).
-
-                partial: If partial is False, and if `text` is a string, then a message will be
-                 considered a match if the message's text attribute and `text` are equal. If partial
-                 is True, then `text` needs only be contained in the message's text to be considered
-                 a match. This argument has no effect if `text` is a compiled regular expression
-                 (default: False).
-
-                inverse: If inverse is False, then the match is performed as described above. If
-                 inverse is True, then the matching logic is inverted, and only messages that fail
-                 to match will be returned.
-
-            Returns:
-                List of matching FlashMessage objects.
-        """
-        msg_type = t if isinstance(t, (tuple, list, set, type(None))) else (t, )
-        # If inverse is True, further comparison statements will be treated as is.
-        # Otherwise, they will be inverted by not_().
-        op = bool if inverse else not_
-        log_inverse = "inverse " if inverse else ""
-        log_type = f", type: {t!r}" if msg_type else ""
-        if isinstance(text, Pattern):
-            log_part = "pattern"
-            log_text = f", pattern: {text.pattern!r}"
-        else:
-            log_part = "partial" if partial else "exact"
-            log_text = f", text: {text!r}" if text else ""
-        log_msg = f"Performing {log_inverse}{log_part} match of flash messages{log_text}{log_type}"
-        self.logger.info(log_msg)
-
-        matched_messages = []
-        for message in self.messages:
-            if msg_type and op(message.type in msg_type):
-                continue
-            if isinstance(text, Pattern) and op(text.match(message.text)):
-                continue
-            if isinstance(text, str) and op((partial and text in message.text) or
-                                            (not partial and text == message.text)):
-                continue
-            matched_messages.append(message)
-        return matched_messages
-
-    def assert_no_error(self, wait=0):
-        self.logger.info('asserting there are no error messages')
-        try:
-            msgs = wait_for(self.match_messages, func_kwargs=dict(t={'success', 'info', 'warning'},
-                                                                  inverse=True), timeout=wait)[0]
-            if msgs:
-                err = ",".join([": ".join((msg.type, msg.text)) for msg in msgs])
-                self.logger.error('%s', err)
-                raise AssertionError('assert_no_error: {}'.format(err))
-        except TimedOutError:
-            return True
-
-    def assert_message(self, text, t=None, partial=False, wait=0):
-        # If text is a compiled regex instead of a string, log it as a pattern match.
-        if isinstance(text, Pattern):
-            log_part = 'pattern'
-            log_text = text.pattern
-        else:
-            log_part = 'partial' if partial else 'exact'
-            log_text = text
-        try:
-            msgs = wait_for(self.match_messages, func_kwargs=dict(text=text, t=t, partial=partial),
-                            timeout=wait)[0]
-            if msgs:
-                return True
-            else:
-                raise TimedOutError
-        except TimedOutError:
-            if t is not None:
-                e_text = f"{t}: {log_text}"
-            else:
-                e_text = log_text
-            msg_text = [msg.text for msg in self.messages]
-            log_msg = (f'assert {log_part} match of message: {e_text}.\n '
-                       f'Available messages: {msg_text}')
-            raise AssertionError(log_msg)
-
-    def assert_success_message(self, text, t=None, partial=False, wait=0):
-        self.assert_no_error(wait=wait)
-        self.assert_message(text, t=t or 'success', partial=partial, wait=wait)
-
-    def __repr__(self):
-        return '{}({!r})'.format(type(self).__name__, self.locator)
-
-
-class FlashMessage(Widget):
-    """Not to be instantiated on View"""
-
-    TYPE_MAPPING = {
-        "alert-warning": "warning",
-        "alert-success": "success",
-        "alert-danger": "error",
-        "alert-info": "info"
-    }
-
-    def __init__(self, parent, flash_div, logger=None):
-        Widget.__init__(self, parent, logger=logger)
-        self.flash_div = flash_div
-
-    def __locator__(self):
-        return self.flash_div
-
-    def read(self):
-        return self.text
-
-    @property
-    def text(self):
-        return self.browser.text('./strong', parent=self)
-
-    def dismiss(self):
-        self.logger.info('dismissed %r', self.text)
-        return self.browser.click('./button[contains(@class, "close")]', parent=self)
-
-    @property
-    def icon(self):
-        try:
-            e = self.browser.element('./span[contains(@class, "pficon")]', parent=self)
-        except NoSuchElementException:
-            return None
-        for class_ in self.browser.classes(e):
-            if class_.startswith('pficon-'):
-                return class_[7:]
-        else:
-            return None
-
-    @property
-    def type(self):
-        for class_ in self.browser.classes(self):
-            if class_ in self.TYPE_MAPPING:
-                return self.TYPE_MAPPING[class_]
-        else:
-            raise ValueError(
-                'Could not find a proper alert type. Available classes: {!r} Alert has: {!r}'
-                .format(self.TYPE_MAPPING, self.browser.classes(self)))
-
-
 class NavDropdown(Widget, ClickableMixin):
     """The dropdowns used eg. in navigation. Usually located in the top navbar."""
     EXPAND_LOCATOR = ('./a["aria-expanded" and '
@@ -2919,3 +2738,211 @@ class ItemsList(View):
             item = self.item_class(self, index=i)
             if getattr(item, key, None) == value:
                 yield item
+
+
+class FlashMessage(ParametrizedView):
+    """Represent a Patternfly Inline Notification:
+    https://www.patternfly.org/v3/pattern-library/communication/inline-notifications/
+    Parametrized by the XPath index of the notification within the containing FlashMessages block.
+    """
+    TYPE_MAPPING = {
+        'alert-warning': 'warning',
+        'alert-success': 'success',
+        'alert-danger': 'error',
+        'alert-info': 'info'
+    }
+
+    PARAMETERS = ('index',)
+    ROOT = ParametrizedLocator('.//div[contains(@class, "alert") and position()={index}]')
+
+    TEXT_LOCATOR = './strong'
+    DISMISS_LOCATOR = './button[contains(@class, "close")]'
+    ICON_LOCATOR = './span[contains(@class, "pficon")]'
+
+    # XPath index starting at 1
+    index = Parameter('index')
+
+    @property
+    def text(self):
+        """Return the message text of the notification."""
+        return self.browser.text(self.TEXT_LOCATOR, parent=self)
+
+    def dismiss(self):
+        """Close the notification."""
+        self.logger.info(f"Dismissed notification with text {self.text!r}.")
+        return self.browser.click(self.DISMISS_LOCATOR, parent=self)
+
+    @property
+    def icon(self):
+        try:
+            e = self.browser.element(self.ICON_LOCATOR, parent=self)
+        except NoSuchElementException:
+            return None
+
+        for class_ in self.browser.classes(e):
+            if class_.startswith('pficon-'):
+                return class_[7:]
+        else:
+            return None
+
+    @property
+    def type(self):
+        classes = self.browser.classes(self)
+        for class_ in classes:
+            if class_ in self.TYPE_MAPPING:
+                return self.TYPE_MAPPING[class_]
+        else:
+            raise ValueError("Could not find a proper notification type."
+                             f" Available classes: {self.TYPE_MAPPING!r}."
+                             f" Notification types: {classes!r}.")
+
+
+class FlashMessages(View):
+    """Represent the div block containing the individual inline notifications."""
+    ROOT = './/div[@id="flash_msg_div"]'
+    MSG_LOCATOR = './div[contains(@class, "flash_text_div")]/div[contains(@class, "alert")]'
+    msg_class = FlashMessage
+
+    def __getitem__(self, msg_filter):
+        """Allow the direct selection of a FlashMessage with a filter:
+           msg = view.flash[msg_filter]
+           msg_filter can be of type dict, int, or None.
+        """
+        if isinstance(msg_filter, int):
+            return next(self.messages(index=msg_filter))
+        elif isinstance(msg_filter, dict) or msg_filter is None:
+            return self.messages(**msg_filter)
+        else:
+            raise ValueError(f"msg_filter {msg_filter} is of type {type(msg_filter)}"
+                             " but must be dict, int, or None.")
+
+    @property
+    def msg_count(self):
+        return len(self.browser.elements(self.MSG_LOCATOR, parent=self))
+
+    def messages(self, **msg_filter):
+        """Return a generator for all notifications matching the msg_filter.
+        The total number of notifications is re-checked each time, and the parametrized XPath
+        index is re-calculated if necessary, in case any of the previously-yielded
+        notifications have been dismissed.
+
+        Kwargs:
+               text: :py:class:`str` or :py:class:`Pattern` to match against the notification text.
+                     Default: None.
+                  t: :py:class:`str` or list/set/tuple of them, to match against the notification
+                     type. Default: None.
+            partial: if True, then a partial (sub-string) text match will be performed.
+                     Default: False.
+            inverse: if True, perform an inverse search.
+                     Default: False.
+              index: The (0-based) index of the notification in the list to return.
+                     Default: None.
+        """
+        text = msg_filter.get('text', None)
+        t = msg_filter.get('t', None)
+        partial = msg_filter.get('partial', False)
+        inverse = msg_filter.get('inverse', False)
+        index = msg_filter.get('index', None)
+
+        msg_types = t if isinstance(t, (tuple, list, set, type(None))) else (t, )
+        op = not_ if inverse else bool
+
+        if (text or t or partial or inverse):
+            log_inverse = "inverse " if inverse else ""
+            log_types = f", type(s): {t!r}" if msg_types else ""
+
+            if isinstance(text, Pattern):
+                log_part = "pattern"
+                log_text = f", pattern: {text.pattern!r}"
+            else:
+                log_part = "partial" if partial else "exact"
+                log_text = f", text: {text!r}" if text else ""
+
+            log_msg = (f"Performing {log_inverse}{log_part}"
+                       f" match of notifications{log_text}{log_types}")
+        elif isinstance(index, int):
+            log_msg = f"Reading notification with index {index}."
+        else:
+            log_msg = "Reading all notifications."
+        self.logger.info(log_msg)
+
+        # Filter via index (starting from 0).
+        # Add 1 for the XPath index.
+        if isinstance(index, int):
+            start = index + 1
+            stop = start + 1
+        else:
+            start = 1
+            stop = self.msg_count + 1
+
+        for i in range(start, stop):
+            if isinstance(index, int):
+                j = i
+            else:
+                new_stop = self.msg_count + 1
+                j = i - (stop - new_stop)
+
+            msg = self.msg_class(self, index=j)
+
+            if msg_types and not op(msg.type in msg_types):
+                continue
+            if isinstance(text, Pattern) and not op(text.match(msg.text)):
+                continue
+            if isinstance(text, str) and not op(
+                    (partial and text in msg.text) or (not partial and text == msg.text)):
+                continue
+
+            yield msg
+
+    def read(self, **msg_filter):
+        """Return a list containing the notifications' text."""
+        result = []
+        for msg in self.messages(**msg_filter):
+            result.append(msg.text)
+        return result
+
+    def dismiss(self):
+        """Dismiss all notifications."""
+        for msg in self.messages():
+            msg.dismiss()
+
+    def assert_no_error(self):
+        self.logger.info("Asserting there are no error notifications.")
+        msg_filter = {
+            't': {'success', 'info', 'warning'},
+            'inverse': True
+        }
+        errs = []
+        for msg in self.messages(**msg_filter):
+            errs.append(f"{msg.type}:{msg.text}")
+        if errs:
+            self.logger.error(errs)
+            raise AssertionError(f"assert_no_error: {errs}")
+
+    def assert_message(self, text, t=None, partial=False):
+        msg_filter = {
+            'text': text,
+            't': t,
+            'partial': partial
+        }
+        if not self.read(**msg_filter):
+            # Log regex as a pattern match.
+            if isinstance(text, Pattern):
+                log_part = 'pattern'
+                log_text = text.pattern
+            else:
+                log_part = 'partial' if partial else 'exact'
+                log_text = text
+            e_text = f"{t}: {log_text}" if t else log_text
+            log_msg = (f"Assert {log_part} match of message.\n "
+                       f"Expected: {e_text}.\n "
+                       f"Available messages: {self.read()}")
+            raise AssertionError(log_msg)
+
+    def assert_success_message(self, text, t=None, partial=False):
+        self.assert_no_error()
+        self.assert_message(text, t=(t or 'success'), partial=partial)
+
+    @property
+    def is_displayed(self):
+        return self.parent_browser.is_displayed(self.ROOT)

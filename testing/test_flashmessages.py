@@ -15,7 +15,7 @@ MSGS = [Message('Retirement date set to 12/31/19 15:55 UTC', 'success'),
 
 def test_flashmessage(browser):
     class TestView(View):
-        flash = FlashMessages('.//div[@id="flash_msg_div"]')
+        flash = View.nested(FlashMessages)
 
     view = TestView(browser)
     msgs = view.flash.read()
@@ -25,20 +25,19 @@ def test_flashmessage(browser):
 
     view.flash.assert_no_error()
 
-    # regex match
+    # Test regex match.
     t = re.compile('^Retirement')
     view.flash.assert_message(t)
     view.flash.assert_success_message(t)
 
-    # partial match
+    # Test partial pattern match.
     t = 'etirement'
     view.flash.assert_message(t, partial=True)
     view.flash.assert_success_message(t, partial=True)
 
-    # inverse match
+    # Test inverse pattern match.
     t = 'This message does not exist'
-    assert not view.flash.match_messages(t)
-    assert view.flash.match_messages(t, inverse=True)
+    assert view.flash.read(text=t, inverse=True) == msgs
 
     view.flash.dismiss()
     assert not view.flash.read()
