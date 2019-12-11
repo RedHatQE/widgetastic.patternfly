@@ -552,6 +552,9 @@ class BootstrapNav(Widget):
     PARTIAL_TEXT = './/li/a[contains(normalize-space(.), {txt})]'
     ATTR_MATCHING = './/li/a[@{attr}={txt}]'
     TEXT_DISABLED = './/li[contains(@class, "disabled")]/a[text()={txt}]'
+    PARTIAL_TEXT_DISABLED = (
+        './/li[contains(@class, "disabled")]/a[contains(normalize-space(.), {txt})]'
+    )
     ATTR_DISABLED = './/li[contains(@class, "disabled")]/a[@{attr}={txt}]'
     VALID_ATTRS = {'href', 'title', 'class', 'id'}
 
@@ -613,8 +616,9 @@ class BootstrapNav(Widget):
             # Check if an item is disabled based on the text of that item
             if isinstance(text, partial_match):
                 partial_text = text.item
-                text = self.browser.element(self.PARTIAL_TEXT.format(txt=quote(partial_text))).text
-            xpath = self.TEXT_DISABLED.format(txt=quote(text))
+                xpath = self.PARTIAL_TEXT_DISABLED.format(txt=quote(partial_text))
+            else:
+                xpath = self.TEXT_DISABLED.format(txt=quote(text))
         elif self.VALID_ATTRS & set(kwargs.keys()):
             # Check if an item is disabled based on an attribute, if it is one of the VALID_ATTRS
             attr = (self.VALID_ATTRS & set(kwargs.keys())).pop()

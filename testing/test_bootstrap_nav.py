@@ -16,6 +16,7 @@ def test_bootstrap_nav(browser):
         "ALL (Default)",
         "Environment / Dev",
         "Environment / Prod",
+        "UAT",
         "Environment / UAT",
         "",
     ]
