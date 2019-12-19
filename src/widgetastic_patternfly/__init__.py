@@ -594,10 +594,10 @@ class BootstrapNav(Widget):
             # Select an item based on the text of that item
             if isinstance(text, partial_match):
                 text = text.item
-                link = self.browser.element(self.PARTIAL_TEXT.format(txt=quote(text)))
+                link = self.browser.element(self.PARTIAL_TEXT.format(txt=quote(text)), parent=self)
                 self.logger.info('selecting by partial matching text: %r', text)
             else:
-                link = self.browser.element(self.TEXT_MATCHING.format(txt=quote(text)))
+                link = self.browser.element(self.TEXT_MATCHING.format(txt=quote(text)), parent=self)
                 self.logger.info('selecting by full matching text: %r', text)
         elif self.VALID_ATTRS & set(kwargs.keys()):
             # Select an item based on an attribute, if it is one of the VALID_ATTRS
@@ -628,7 +628,7 @@ class BootstrapNav(Widget):
             raise KeyError(
                 'Either text or one of {} needs to be specified'.format(self.VALID_ATTRS))
         try:
-            self.browser.element(xpath)
+            self.browser.element(xpath, parent=self)
             return True
         except NoSuchElementException:
             return False
@@ -647,7 +647,7 @@ class BootstrapNav(Widget):
             raise KeyError(
                 'Either text or one of {} needs to be specified'.format(self.VALID_ATTRS))
         try:
-            self.browser.element(xpath)
+            self.browser.element(xpath, parent=self)
             return True
         except NoSuchElementException:
             return False
