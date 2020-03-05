@@ -889,7 +889,7 @@ class BootstrapSelect(Widget, ClickableMixin):
                 self.logger.info('selecting by visible text: %r', item)
                 try:
                     self.browser.click(self.BY_VISIBLE_TEXT.format(quote(item)),
-                                       parent=self,  force_scroll=True)
+                                       parent=self, force_scroll=True)
                 except NoSuchElementException:
                     try:
                         # Added this as for some views(some tags pages) dropdown is separated from
@@ -2818,7 +2818,12 @@ class FlashMessages(View):
 
     @property
     def msg_count(self):
-        return len(self.browser.elements(self.MSG_LOCATOR, parent=self))
+        c = 0
+        try:
+            c = len(self.browser.elements(self.MSG_LOCATOR, parent=self))
+        except NoSuchElementException:
+            pass
+        return c
 
     def messages(self, **msg_filter):
         """Return a generator for all notifications matching the msg_filter.
