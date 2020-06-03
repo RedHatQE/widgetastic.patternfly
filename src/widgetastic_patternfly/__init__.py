@@ -2800,7 +2800,10 @@ class FlashMessage(ParametrizedView):
 class FlashMessages(View):
     """Represent the div block containing the individual inline notifications."""
     ROOT = './/div[@id="flash_msg_div"]'
-    MSG_LOCATOR = './div[contains(@class, "flash_text_div")]/div[contains(@class, "alert")]'
+    MSG_LOCATOR = (
+        '//div[contains(@class, "flash_text_div") or contains(@class, "flash-message")]'
+        '/div[contains(@class, "alert")]'
+    )
     msg_class = FlashMessage
 
     def __getitem__(self, msg_filter):
