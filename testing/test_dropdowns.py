@@ -3,13 +3,10 @@ from widgetastic_patternfly import Kebab, NavDropdown
 
 def test_kebab(browser):
     class TestView(View):
-        nav_dropdown = NavDropdown()
         kebab_menu = Kebab(id="dropdownKebab")
         kebab_output = Text(locator='//*[@id="kebab_display"]')
 
     view = TestView(browser)
-    breakpoint()
-    reprtest.view
 
     # check for display
     assert view.kebab_menu.is_displayed

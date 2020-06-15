@@ -1,3 +1,4 @@
+from widgetastic.widget import View
 from widgetastic_patternfly import Button, ViewChangeButton, Input, NavDropdown, BootstrapNav
 
 def reprtest(view):
