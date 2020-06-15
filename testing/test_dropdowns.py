@@ -1,7 +1,6 @@
 from widgetastic.widget import Text, View
 from widgetastic_patternfly import Kebab, NavDropdown
 
-
 def test_kebab(browser):
     class TestView(View):
         nav_dropdown = NavDropdown()
@@ -9,9 +8,8 @@ def test_kebab(browser):
         kebab_output = Text(locator='//*[@id="kebab_display"]')
 
     view = TestView(browser)
-
-    assert isinstance(repr(view.nav_dropdown), str)
-    assert isinstance(str(view.nav_dropdown), str)
+    breakpoint()
+    reprtest.view
 
     # check for display
     assert view.kebab_menu.is_displayed
