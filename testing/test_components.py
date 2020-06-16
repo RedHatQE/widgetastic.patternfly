@@ -10,7 +10,7 @@ def reprtest(view):
 def test_srt_repr(browser):
     class TestView(View):
         btn = Button()
-        vcb = ViewChangeButton()
+        vcb = ViewChangeButton(title="nonexistent")
         inp = Input()
         nav_dropdown = NavDropdown()
         bstnav = BootstrapNav
