@@ -16,5 +16,4 @@ def test_srt_repr(browser):
         bstnav = BootstrapNav
 
     view = TestView(browser)
-    for item in view.btn, view.vcb, view.inp, view.nav_dropdown, view.bstnav:
-        reprtest(item)
+    reprtest(view)
