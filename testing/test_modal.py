@@ -4,10 +4,18 @@ from wait_for import wait_for
 from widgetastic.widget import TextInput
 from widgetastic.widget import View
 from widgetastic_patternfly import Modal, Button
+from time import sleep
 
 # Values from testing_page.html modal
 modal_id = 'myModal'
 title = 'Modal Title'
+
+
+MODAL_INTERACTION_TIMEOUT = 5
+
+
+def workaround_modal_close_n_open_timing_issue():
+    sleep(.1)
 
 
 class SpecificModal(Modal):
@@ -39,25 +47,32 @@ def test_generic_modal(browser):
     # Open the modal
     assert not view.button.disabled
     view.button.click()
-    wait_for(lambda: view.modal.is_displayed, delay=0.5, num_sec=5)
+    wait_for(lambda: view.modal.is_displayed,
+             delay=0.5, num_sec=MODAL_INTERACTION_TIMEOUT)
 
     assert view.modal.title == title
 
     # close the modal via the "x"
     view.modal.close()
     view.flush_widget_cache()
-    wait_for(lambda: not view.modal.is_displayed, delay=0.5, num_sec=5)
+    wait_for(lambda: not view.modal.is_displayed,
+             delay=0.5, num_sec=MODAL_INTERACTION_TIMEOUT)
+
+    workaround_modal_close_n_open_timing_issue()
 
     # open modal again
     view.button.click()
-    wait_for(lambda: view.modal.is_displayed, delay=0.5, num_sec=5)
+    wait_for(lambda: view.modal.is_displayed,
+             delay=0.5, num_sec=MODAL_INTERACTION_TIMEOUT)
     # make sure buttons are not disabled
     assert not view.modal.footer.dismiss.disabled
     assert not view.modal.footer.accept.disabled
     # make sure the cancel button works
     view.modal.dismiss()
-    wait_for(lambda: not view.modal.is_displayed, delay=0.1, num_sec=5)
+    wait_for(lambda: not view.modal.is_displayed,
+             delay=0.1, num_sec=MODAL_INTERACTION_TIMEOUT)
 
+    workaround_modal_close_n_open_timing_issue()
     # open modal to fill the form
     view.button.click()
     wait_for(lambda: view.modal.is_displayed, delay=0.5, num_sec=5)
@@ -66,4 +81,5 @@ def test_generic_modal(browser):
     )
     # make sure accept button works
     view.modal.accept()
-    wait_for(lambda: not view.modal.is_displayed, delay=0.1, num_sec=5)
+    wait_for(lambda: not view.modal.is_displayed,
+             delay=0.1, num_sec=MODAL_INTERACTION_TIMEOUT)
