@@ -2,9 +2,9 @@ from widgetastic.widget import View
 from widgetastic_patternfly import Button, ViewChangeButton, Input, NavDropdown, BootstrapNav
 
 def reprtest(view):
-    for it in view.child_items:
-        assert isinstance(str(it), str)
-        assert isinstance(repr(it), str)
+    for wgt in view.sub_widgets:
+        assert isinstance(str(wgt), str)
+        assert isinstance(repr(wgt), str)
 
 
 def test_srt_repr(browser):
