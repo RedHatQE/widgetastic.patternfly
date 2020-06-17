@@ -47,10 +47,11 @@ def browser(selenium, httpserver, request):
     this_module = sys.modules[__name__]
     path = os.path.dirname(this_module.__file__)
     testfilename = path + '/testing_page.html'
-    httpserver.serve_content(
+    server_root = '/'
+    httpserver.expect_request(server_root).respond_with_data(
         codecs.open(testfilename, mode='r', encoding='utf-8').read(),
         headers=[('Content-Type', 'text/html')])
-    selenium.get(httpserver.url)
+    selenium.get(httpserver.url_for(server_root))
     return CustomBrowser(selenium)
 
 
