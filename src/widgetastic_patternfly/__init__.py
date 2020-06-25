@@ -345,7 +345,7 @@ class NavDropdown(Widget, ClickableMixin):
         self.browser.click('./ul/li[normalize-space(.)={}]'.format(quote(item)), parent=self)
 
     def __repr__(self):
-        return '{}({!r})'.format(type(self).__name__, self.locator)
+        return '{}(id={!r})'.format(type(self).__name__, self.id)
 
 
 class BootstrapNav(Widget):
