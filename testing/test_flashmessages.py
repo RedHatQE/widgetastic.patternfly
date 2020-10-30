@@ -1,6 +1,10 @@
 import re
 from collections import namedtuple
+from unittest import mock
 
+import pytest
+
+from widgetastic.exceptions import NoSuchElementException
 from widgetastic.widget import View
 from widgetastic_patternfly import FlashMessages
 
@@ -41,3 +45,22 @@ def test_flashmessage(browser):
 
     view.flash.dismiss()
     assert not view.flash.read()
+
+
+def test_flash_message_dismiss_exception(browser, request):
+    class TestView(View):
+        flash = View.nested(FlashMessages)
+
+    view = TestView(browser)
+
+    def _dismiss_exception(self):
+        raise NoSuchElementException('dummy exception')
+
+    from widgetastic_patternfly import FlashMessage
+    with mock.patch.object(FlashMessage, 'dismiss', _dismiss_exception) as patcher:
+
+        with pytest.raises(NoSuchElementException, match='dummy exception'):
+            view.flash.dismiss(handle_exception=False)
+
+        # no exception should be raised
+        view.flash.dismiss(handle_exception=True)
