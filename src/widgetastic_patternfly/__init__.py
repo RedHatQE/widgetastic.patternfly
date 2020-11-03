@@ -2906,10 +2906,21 @@ class FlashMessages(View):
             result.append(msg.text)
         return result
 
-    def dismiss(self):
+    def dismiss(self, handle_exception=True):
         """Dismiss all notifications."""
         for msg in self.messages():
-            msg.dismiss()
+            # Handle a NoSuchElement or StaleElementReference
+            # Some designs will have messages that clear themselves while we're iterating
+            try:
+                msg.dismiss()
+            except (NoSuchElementException, StaleElementReferenceException):
+                self.logger.exception(
+                    f'Exception dismissing messages on ${msg}, continuing'
+                )
+                if handle_exception:
+                    continue
+                else:
+                    raise
 
     def assert_no_error(self):
         self.logger.info("Asserting there are no error notifications.")
