@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """This package contains classes that represent widgets in Patternfly for Widgetastic"""
-
-
+import functools
 import re
 import time
 from cached_property import cached_property
@@ -40,6 +39,25 @@ try:
     Pattern = re.Pattern
 except AttributeError:
     Pattern = re._pattern_type
+
+
+def retry_element(method):
+    """Decorator to invoke method one or more times, if StaleElementReferenceException or
+    NoSuchElementException are raised.
+    """
+    @functools.wraps(method)
+    def retry_element_wrapper(*args, **kwargs):
+        attempts = 10
+        for i in range(attempts):
+            try:
+                return method(*args, **kwargs)
+            except (StaleElementReferenceException, NoSuchElementException):
+                if i < attempts - 1:
+                    time.sleep(0.5)
+                else:
+                    raise
+
+    return retry_element_wrapper
 
 
 class CandidateNotFound(Exception):
@@ -2849,26 +2867,23 @@ class FlashMessages(View):
         inverse = msg_filter.get('inverse', False)
         index = msg_filter.get('index', None)
 
-        msg_types = t if isinstance(t, (tuple, list, set, type(None))) else (t, )
+        types = t if isinstance(t, (tuple, list, set, type(None))) else (t, )
         op = not_ if inverse else bool
 
-        if (text or t or partial or inverse):
-            log_inverse = "inverse " if inverse else ""
-            log_types = f", type(s): {t!r}" if msg_types else ""
-
-            if isinstance(text, Pattern):
-                log_part = "pattern"
-                log_text = f", pattern: {text.pattern!r}"
-            else:
-                log_part = "partial" if partial else "exact"
-                log_text = f", text: {text!r}" if text else ""
-
-            log_msg = (f"Performing {log_inverse}{log_part}"
-                       f" match of notifications{log_text}{log_types}")
+        # Log message describing the type of notification lookup.
+        if any((text, types, partial, inverse)):
+            log_msgs = [
+                f"pattern: {text.pattern!r}" if isinstance(text, Pattern) else f"text: {text!r}",
+                f"type(s): {types!r}",
+                f"partial: {partial}",
+                f"inverse: {inverse}",
+            ]
+            log_msg = f"Performing match of notifications, {', '.join(log_msgs)}."
         elif isinstance(index, int):
             log_msg = f"Reading notification with index {index}."
         else:
             log_msg = "Reading all notifications."
+
         self.logger.info(log_msg)
 
         # Filter via index (starting from 0).
@@ -2889,7 +2904,7 @@ class FlashMessages(View):
 
             msg = self.msg_class(self, index=j)
 
-            if msg_types and not op(msg.type in msg_types):
+            if types and not op(msg.type in types):
                 continue
             if isinstance(text, Pattern) and not op(text.match(msg.text)):
                 continue
@@ -2899,61 +2914,33 @@ class FlashMessages(View):
 
             yield msg
 
+    @retry_element
     def read(self, **msg_filter):
         """Return a list containing the notifications' text."""
-        result = []
-        for msg in self.messages(**msg_filter):
-            result.append(msg.text)
-        return result
+        return [msg.text for msg in self.messages(**msg_filter)]
 
-    def dismiss(self, handle_exception=True):
+    @retry_element
+    def dismiss(self):
         """Dismiss all notifications."""
         for msg in self.messages():
-            # Handle a NoSuchElement or StaleElementReference
-            # Some designs will have messages that clear themselves while we're iterating
-            try:
-                msg.dismiss()
-            except (NoSuchElementException, StaleElementReferenceException):
-                self.logger.exception(
-                    f'Exception dismissing messages on ${msg}, continuing'
-                )
-                if handle_exception:
-                    continue
-                else:
-                    raise
+            msg.dismiss()
 
     def assert_no_error(self):
         self.logger.info("Asserting there are no error notifications.")
-        msg_filter = {
-            't': {'success', 'info', 'warning'},
-            'inverse': True
-        }
-        errs = []
-        for msg in self.messages(**msg_filter):
-            errs.append(f"{msg.type}:{msg.text}")
+        msg_filter = {'t': {'success', 'info', 'warning'}, 'inverse': True}
+        errs = self.read(**msg_filter)
         if errs:
             self.logger.error(errs)
-            raise AssertionError(f"assert_no_error: {errs}")
+            raise AssertionError(f"assert_no_error: found error notifications {errs}")
 
     def assert_message(self, text, t=None, partial=False):
-        msg_filter = {
-            'text': text,
-            't': t,
-            'partial': partial
-        }
+        msg_filter = {'text': text, 't': t, 'partial': partial}
+        all_msgs = self.read()
         if not self.read(**msg_filter):
-            # Log regex as a pattern match.
-            if isinstance(text, Pattern):
-                log_part = 'pattern'
-                log_text = text.pattern
-            else:
-                log_part = 'partial' if partial else 'exact'
-                log_text = text
-            e_text = f"{t}: {log_text}" if t else log_text
-            log_msg = (f"Assert {log_part} match of message.\n "
-                       f"Expected: {e_text}.\n "
-                       f"Available messages: {self.read()}")
-            raise AssertionError(log_msg)
+            raise AssertionError(
+                "assert_message: failed to find matching notifications."
+                f" Available notifications: {all_msgs}"
+            )
 
     def assert_success_message(self, text, t=None, partial=False):
         self.assert_no_error()
