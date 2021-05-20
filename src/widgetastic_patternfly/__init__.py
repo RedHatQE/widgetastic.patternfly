@@ -2925,11 +2925,19 @@ class FlashMessages(View):
         for msg in self.messages():
             msg.dismiss()
 
-    def assert_no_error(self):
+    def assert_no_error(self, ignore_messages=None):
+        """Assert no error messages present.
+
+        Kwargs:
+               ignore_messages: :py:class:`list` of notification text to ignore. Default: None
+        """
+        if ignore_messages is None:
+            ignore_messages = []
+        msg_filter = {"t": {"success", "info", "warning"}, "inverse": True}
+
         self.logger.info("Asserting there are no error notifications.")
-        msg_filter = {'t': {'success', 'info', 'warning'}, 'inverse': True}
         errs = self.read(**msg_filter)
-        if errs:
+        if set(errs) - set(ignore_messages):
             self.logger.error(errs)
             raise AssertionError(f"assert_no_error: found error notifications {errs}")
 
