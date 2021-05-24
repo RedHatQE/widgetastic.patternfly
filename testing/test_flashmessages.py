@@ -1,20 +1,20 @@
 import re
 from collections import namedtuple
-from unittest import mock
 
-import pytest
-
-from widgetastic.exceptions import NoSuchElementException
 from widgetastic.widget import View
 from widgetastic_patternfly import FlashMessages
 
 Message = namedtuple('Message', 'text type')
 
-MSGS = [Message('Retirement date set to 12/31/19 15:55 UTC', 'success'),
-        Message('Retirement date removed', 'success'),
-        Message('All changes have been reset', 'warning'),
-        Message('Set/remove retirement date was cancelled by the user', 'success'),
-        Message('Retirement initiated for 1 VM and Instance from the CFME Database', 'success')]
+OK_MSGS = [
+    Message('Retirement date set to 12/31/19 15:55 UTC', 'success'),
+    Message('Retirement date removed', 'success'),
+    Message('All changes have been reset', 'warning'),
+    Message('Set/remove retirement date was cancelled by the user', 'success'),
+    Message('Retirement initiated for 1 VM and Instance from the CFME Database', 'success'),
+]
+ERROR_MSGS = [Message('Not Configured', 'error')]
+MSGS = OK_MSGS + ERROR_MSGS
 
 
 def test_flashmessage(browser):
@@ -24,9 +24,16 @@ def test_flashmessage(browser):
     view = TestView(browser)
     msgs = view.flash.read()
     assert len(msgs) == len(MSGS)
-    for i in range(len(msgs)):
-        assert msgs[i] == MSGS[i].text
+    for msg, MSG in zip(msgs, MSGS):
+        assert msg == MSG.text
 
+    # Verify assert_no_error() with ignore_messages, then dismiss the error messages
+    view.flash.assert_no_error(ignore_messages=[msg.text for msg in ERROR_MSGS])
+    for msg in view.flash.messages():
+        if msg.type == 'error':
+            msg.dismiss()
+
+    # Verify assert_no_error()
     view.flash.assert_no_error()
 
     # Test regex match.
@@ -41,7 +48,7 @@ def test_flashmessage(browser):
 
     # Test inverse pattern match.
     t = 'This message does not exist'
-    assert view.flash.read(text=t, inverse=True) == msgs
+    assert view.flash.read(text=t, inverse=True) == [msg.text for msg in OK_MSGS]
 
     view.flash.dismiss()
     assert not view.flash.read()
