@@ -1,25 +1,26 @@
-# -*- coding: utf-8 -*-
-from wait_for import wait_for
-
-from widgetastic.widget import TextInput
-from widgetastic.widget import View
-from widgetastic_patternfly import Modal, Button
 from time import sleep
 
+from wait_for import wait_for
+from widgetastic.widget import TextInput
+from widgetastic.widget import View
+
+from widgetastic_patternfly import Button
+from widgetastic_patternfly import Modal
+
 # Values from testing_page.html modal
-modal_id = 'myModal'
-title = 'Modal Title'
+modal_id = "myModal"
+title = "Modal Title"
 
 
 MODAL_INTERACTION_TIMEOUT = 5
 
 
 def workaround_modal_close_n_open_timing_issue():
-    sleep(.1)
+    sleep(0.1)
 
 
 class SpecificModal(Modal):
-    """ Specific Modal class overwrites the body of Modal, since the form will vary. """
+    """Specific Modal class overwrites the body of Modal, since the form will vary."""
 
     @View.nested
     class body(View):  # noqa
@@ -37,8 +38,9 @@ def test_generic_modal(browser):
     """
 
     class TestView(View):
-        """ Dummy page matching testing_page.html elements"""
-        button = Button('Launch demo modal')
+        """Dummy page matching testing_page.html elements"""
+
+        button = Button("Launch demo modal")
         modal = SpecificModal(id=modal_id)
 
     view = TestView(browser)
@@ -47,30 +49,26 @@ def test_generic_modal(browser):
     # Open the modal
     assert not view.button.disabled
     view.button.click()
-    wait_for(lambda: view.modal.is_displayed,
-             delay=0.5, num_sec=MODAL_INTERACTION_TIMEOUT)
+    wait_for(lambda: view.modal.is_displayed, delay=0.5, num_sec=MODAL_INTERACTION_TIMEOUT)
 
     assert view.modal.title == title
 
     # close the modal via the "x"
     view.modal.close()
     view.flush_widget_cache()
-    wait_for(lambda: not view.modal.is_displayed,
-             delay=0.5, num_sec=MODAL_INTERACTION_TIMEOUT)
+    wait_for(lambda: not view.modal.is_displayed, delay=0.5, num_sec=MODAL_INTERACTION_TIMEOUT)
 
     workaround_modal_close_n_open_timing_issue()
 
     # open modal again
     view.button.click()
-    wait_for(lambda: view.modal.is_displayed,
-             delay=0.5, num_sec=MODAL_INTERACTION_TIMEOUT)
+    wait_for(lambda: view.modal.is_displayed, delay=0.5, num_sec=MODAL_INTERACTION_TIMEOUT)
     # make sure buttons are not disabled
     assert not view.modal.footer.dismiss.disabled
     assert not view.modal.footer.accept.disabled
     # make sure the cancel button works
     view.modal.dismiss()
-    wait_for(lambda: not view.modal.is_displayed,
-             delay=0.1, num_sec=MODAL_INTERACTION_TIMEOUT)
+    wait_for(lambda: not view.modal.is_displayed, delay=0.1, num_sec=MODAL_INTERACTION_TIMEOUT)
 
     workaround_modal_close_n_open_timing_issue()
     # open modal to fill the form
@@ -81,5 +79,4 @@ def test_generic_modal(browser):
     )
     # make sure accept button works
     view.modal.accept()
-    wait_for(lambda: not view.modal.is_displayed,
-             delay=0.1, num_sec=MODAL_INTERACTION_TIMEOUT)
+    wait_for(lambda: not view.modal.is_displayed, delay=0.1, num_sec=MODAL_INTERACTION_TIMEOUT)
