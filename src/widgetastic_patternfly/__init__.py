@@ -1826,13 +1826,16 @@ class Modal(View):
 
     def __init__(self, parent, id=None, logger=None):
         self.id = id
-        if id:
-            self.ROOT = ParametrizedLocator(
-                './/div[normalize-space(@id)={@id|quote} and '
-                'contains(@class, "modal") and contains(@class, "fade") '
-                'and @role="dialog"]')
-
         View.__init__(self, parent, logger=logger)
+
+    def __locator__(self):
+        """If id was passed, parametrize it into a locator, otherwise use ROOT"""
+        if self.id is not None:
+            return ('//div[normalize-space(@id)="{}" and contains(@class, "modal")'
+                    'and contains(@class, "fade") and @role="dialog"]'
+                    .format(self.id))
+        else:
+            return self.ROOT
 
     @property
     def title(self):
