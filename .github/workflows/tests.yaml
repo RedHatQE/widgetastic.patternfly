@@ -1,0 +1,119 @@
+name: Widgetastic.patternfly Test suite
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types: ["opened", "synchronize", "reopened"]
+
+jobs:
+  codechecks:
+    name: Code quality [pre-commit]
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+          architecture: "x64"
+
+      - name: Pre Commit Checks
+        uses: pre-commit/action@v2.0.0
+
+      - name: Analysis (git diff)
+        if: failure()
+        run: git diff
+
+  unit-tests:
+    # Run unit tests on different version of python and browser
+    name: Python-${{ matrix.python-version }}-${{ matrix.browser }}
+    runs-on: ubuntu-20.04
+    needs: [codechecks]
+    strategy:
+      matrix:
+        browser: [chrome, firefox]
+        python-version: [pypy3, 3.8, 3.9]
+
+    steps:
+      - name: Pull selenium-standalone:latest
+        run: podman pull quay.io/redhatqe/selenium-standalone:latest
+
+      - name: Pull docker.io/library/nginx:alpine
+        run: podman pull docker.io/library/nginx:alpine
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Python-${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: UnitTest - Python-${{ matrix.python-version }}-${{ matrix.browser }}
+        env:
+          BROWSER: ${{ matrix.browser }}
+          XDG_RUNTIME_DIR: ${{ github.workspace }}
+          # from old tox, were never explicitly set in travis?
+          PYTEST_HTTPSERVER_HOST: ""
+          PYTEST_HTTPSERVER_PORT: ""
+        run: |
+          pip install -U setuptools wheel
+          pip install -e .[test]
+          mkdir -p ${XDG_RUNTIME_DIR}/podman
+          podman system service --time=0 unix://${XDG_RUNTIME_DIR}/podman/podman.sock &
+          pytest -v --cov widgetastic_patternfly --cov-report term-missing --alluredir allure/
+
+  docs:
+    name: Docs Build
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
+      - name: Install Deps
+        run: |
+          pip install -U pip setuptools wheel
+          pip install .[docs]
+
+      - name: Build Docs
+        run: sphinx-build -b html -d build/sphinx-doctrees docs build/htmldocs
+
+      - name: Archive Docs
+        uses: actions/upload-artifact@v2
+        with:
+          name: sphinx-htmldocs
+          path: build/htmldocs
+
+  package:
+    name: Build & Verify Package
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+          architecture: "x64"
+
+      - name: Build and verify with twine
+        run: |
+          python -m pip install pip --upgrade
+          pip install twine setuptools wheel --upgrade
+          python setup.py sdist bdist_wheel
+          ls -l dist
+          python -m twine check dist/*
