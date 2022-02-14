@@ -2063,7 +2063,7 @@ class DatePicker(View):
                     return el
 
     @View.nested
-    class date_pick(HeaderView):    # noqa
+    class date_pick(HeaderView):  # noqa
         ROOT = ".//*[contains(@class, 'datepicker-days')]"
         DATES = ".//table/tbody/tr/td"
 
@@ -2076,7 +2076,7 @@ class DatePicker(View):
             return dates
 
     @View.nested
-    class month_pick(HeaderView):   # noqa
+    class month_pick(HeaderView):  # noqa
         ROOT = ".//*[contains(@class, 'datepicker-months')]"
         MONTHS = ".//table/tbody/tr/td/*"
 
@@ -2089,7 +2089,7 @@ class DatePicker(View):
             return months
 
     @View.nested
-    class year_pick(HeaderView):    # noqa
+    class year_pick(HeaderView):  # noqa
         ROOT = ".//*[contains(@class, 'datepicker-years')]"
         YEARS = ".//table/tbody/tr/td/*"
 

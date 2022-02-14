@@ -58,9 +58,6 @@ jobs:
         env:
           BROWSER: ${{ matrix.browser }}
           XDG_RUNTIME_DIR: ${{ github.workspace }}
-          # from old tox, were never explicitly set in travis?
-          PYTEST_HTTPSERVER_HOST: ""
-          PYTEST_HTTPSERVER_PORT: ""
         run: |
           pip install -U setuptools wheel
           pip install -e .[test]
