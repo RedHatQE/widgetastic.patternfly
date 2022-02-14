@@ -1,5 +1,6 @@
 from time import sleep
 
+import pytest
 from wait_for import wait_for
 from widgetastic.widget import TextInput
 from widgetastic.widget import View
@@ -29,6 +30,7 @@ class SpecificModal(Modal):
         field_three = TextInput(id="textInput3-modal-markup")
 
 
+@pytest.mark.skip(reason="https://github.com/RedHatQE/widgetastic.patternfly/issues/126")
 def test_generic_modal(browser):
     """
     Test the modal, including all methods/properties
