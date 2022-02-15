@@ -8,29 +8,30 @@ class IconConstants(Constant):
     References:
         https://www.patternfly.org/styles/icons/
     """
-    ADD = 'pficon-add-circle-o'
-    ANGLE_DOWN = 'fa-angle-down'
-    ANGLE_LEFT = 'fa-angle-left'
-    ANGLE_RIGHT = 'fa-angle-right'
-    ANGLE_UP = 'fa-angle-up'
-    APPLICATIONS = 'pficon-applications'
-    ARROW = 'pficon-arrow'
-    CLUSTER = 'pficon-cluster'
-    CONTAINER_NODE = 'pficon-container-node'
-    CPU = 'pficon-cpu'
-    ERROR = 'pficon-error-circle-o'
-    HOME = 'pficon-home'
-    OK = 'pficon-ok'
-    WARNING = 'pficon-warning-triangle-o'
-    REFRESH = 'fa-refresh'
-    USER = 'pficon-user'
+
+    ADD = "pficon-add-circle-o"
+    ANGLE_DOWN = "fa-angle-down"
+    ANGLE_LEFT = "fa-angle-left"
+    ANGLE_RIGHT = "fa-angle-right"
+    ANGLE_UP = "fa-angle-up"
+    APPLICATIONS = "pficon-applications"
+    ARROW = "pficon-arrow"
+    CLUSTER = "pficon-cluster"
+    CONTAINER_NODE = "pficon-container-node"
+    CPU = "pficon-cpu"
+    ERROR = "pficon-error-circle-o"
+    HOME = "pficon-home"
+    OK = "pficon-ok"
+    WARNING = "pficon-warning-triangle-o"
+    REFRESH = "fa-refresh"
+    USER = "pficon-user"
 
     @classmethod
     def icon_strings(cls):
         return {a: s for a, s in vars(IconConstants).items() if isinstance(s, Constant)}
 
 
-class PFIcon(object):
+class PFIcon:
     """Class to enumerate the patternfly default icons
 
     pficon-* markup classes have a variety of strings, this class should serve to prevent widget
@@ -52,15 +53,14 @@ class PFIcon(object):
         """
 
         els = browser.elements(
-            './/*[contains(@class, "pficon") or contains(@class, "fa")]',
-            parent=element
+            './/*[contains(@class, "pficon") or contains(@class, "fa")]', parent=element
         )
         if len(els) != 1:
             return None  # multiple icons
 
-        icon_class = [c
-                      for c in browser.classes(els.pop())
-                      if c.startswith('pficon-') or c.startswith('fa-')]
+        icon_class = [
+            c for c in browser.classes(els.pop()) if c.startswith("pficon-") or c.startswith("fa-")
+        ]
         # slice off first 6 chars if a class was found
         icon_name = icon_class.pop() if icon_class else None
         icons = [

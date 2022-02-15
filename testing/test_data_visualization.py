@@ -1,15 +1,13 @@
 import pytest
-
 from widgetastic.widget import View
-from widgetastic_patternfly import (
-    BarChart,
-    GroupedBarChart,
-    LineChart,
-    SingleLineChart,
-    SingleSplineChart,
-    SparkLineChart,
-    SplineChart,
-)
+
+from widgetastic_patternfly import BarChart
+from widgetastic_patternfly import GroupedBarChart
+from widgetastic_patternfly import LineChart
+from widgetastic_patternfly import SingleLineChart
+from widgetastic_patternfly import SingleSplineChart
+from widgetastic_patternfly import SparkLineChart
+from widgetastic_patternfly import SplineChart
 
 SPARK_DATA = [10, 14, 12, 20, 31, 27, 44, 36, 52, 55, 62, 68, 69, 88, 74, 88, 91]
 

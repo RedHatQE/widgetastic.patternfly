@@ -1,7 +1,9 @@
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 
 from widgetastic.widget import View
+
 from widgetastic_patternfly import DatePicker
 
 
@@ -27,7 +29,7 @@ def test_bootstrap_date_picker(browser):
     assert today_date.date() == view.dp_basic_patternfly.read().date()
 
     # check `fill` and `read` with year back date
-    yr_back_date = (today_date - timedelta(days=365))
+    yr_back_date = today_date - timedelta(days=365)
     view.dp_readonly.fill(yr_back_date)
     assert yr_back_date.date() == view.dp_readonly.read().date()
     view.dp_readwrite.fill(yr_back_date)
@@ -45,7 +47,7 @@ def test_bootstrap_date_picker(browser):
 
     # `fill` and `read` with random timedelta
     random_weeks = random.randint(100, 5000)
-    date_obj = (today_date - timedelta(weeks=random_weeks))
+    date_obj = today_date - timedelta(weeks=random_weeks)
 
     view.dp_readonly.fill(date_obj)
     assert date_obj.date() == view.dp_readonly.read().date()

@@ -1,4 +1,6 @@
-from widgetastic.widget import Text, View
+from widgetastic.widget import Text
+from widgetastic.widget import View
+
 from widgetastic_patternfly import Kebab
 
 

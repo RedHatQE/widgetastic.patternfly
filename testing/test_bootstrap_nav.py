@@ -1,5 +1,6 @@
 from widgetastic.utils import partial_match
 from widgetastic.widget import View
+
 from widgetastic_patternfly import BootstrapNav
 
 
@@ -21,8 +22,8 @@ def test_bootstrap_nav(browser):
         "",
     ]
     # assert if currently active(selected) element is being returned correctly
-    assert view.nav.read() == ['ALL (Default)']
+    assert view.nav.read() == ["ALL (Default)"]
     # assert if list has_item
-    assert view.nav.has_item(text='Environment / Prod')
+    assert view.nav.has_item(text="Environment / Prod")
     # assert if partial match works for is_disabled
     assert view.nav.is_disabled(text=partial_match("UAT"))

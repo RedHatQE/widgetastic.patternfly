@@ -1,36 +1,35 @@
-# -*- coding: utf-8 -*-
 """This package contains classes that represent widgets in Patternfly for Widgetastic"""
 import functools
 import re
 import time
-from cached_property import cached_property
 from collections import namedtuple
 from datetime import datetime
 from operator import not_
 
-from widgetastic.exceptions import (
-    LocatorNotImplemented,
-    NoSuchElementException,
-    StaleElementReferenceException,
-    UnexpectedAlertPresentException,
-    WidgetOperationFailed,
-)
+from cached_property import cached_property
+from wait_for import TimedOutError
+from wait_for import wait_for
+from wait_for import wait_for_decorator
+from widgetastic.exceptions import LocatorNotImplemented
+from widgetastic.exceptions import NoSuchElementException
+from widgetastic.exceptions import StaleElementReferenceException
+from widgetastic.exceptions import UnexpectedAlertPresentException
+from widgetastic.exceptions import WidgetOperationFailed
 from widgetastic.log import call_sig
-from widgetastic.widget import (
-    BaseInput,
-    ClickableMixin,
-    Table,
-    Text,
-    TextInput,
-    View,
-    Widget,
-    do_not_read_this_widget,
-    ParametrizedView
-)
-from widgetastic.utils import ParametrizedLocator, Parameter, VersionPick, partial_match
+from widgetastic.utils import Parameter
+from widgetastic.utils import ParametrizedLocator
+from widgetastic.utils import partial_match
+from widgetastic.utils import VersionPick
+from widgetastic.widget import BaseInput
+from widgetastic.widget import ClickableMixin
+from widgetastic.widget import do_not_read_this_widget
+from widgetastic.widget import ParametrizedView
+from widgetastic.widget import Table
+from widgetastic.widget import Text
+from widgetastic.widget import TextInput
+from widgetastic.widget import View
+from widgetastic.widget import Widget
 from widgetastic.xpath import quote
-
-from wait_for import wait_for, wait_for_decorator, TimedOutError
 
 from .utils import PFIcon
 
@@ -45,6 +44,7 @@ def retry_element(method):
     """Decorator to invoke method one or more times, if StaleElementReferenceException or
     NoSuchElementException are raised.
     """
+
     @functools.wraps(method)
     def retry_element_wrapper(*args, **kwargs):
         attempts = 10
@@ -64,12 +64,13 @@ class CandidateNotFound(Exception):
     """
     Raised if there is no candidate found whilst trying to traverse a tree.
     """
+
     def __init__(self, d):
         self.d = d
 
     @property
     def message(self):
-        return ", ".join("{}: {}".format(k, v) for k, v in self.d.items())
+        return ", ".join(f"{k}: {v}" for k, v in self.d.items())
 
     def __str__(self):
         return self.message
@@ -95,9 +96,9 @@ class SelectItemNotFound(Exception):
 
     @property
     def message(self):
-        return ('Could not find {!r} in {!r}\n'
-                'These options are present: {!r}'
-                .format(self.item, self.widget, ', '.join(self.options)))
+        return "Could not find {!r} in {!r}\n" "These options are present: {!r}".format(
+            self.item, self.widget, ", ".join(self.options)
+        )
 
     def __str__(self):
         return self.message
@@ -118,80 +119,83 @@ class Button(Widget, ClickableMixin):
         assert button.active
         assert not button.disabled
     """
+
     CHECK_VISIBILITY = True
 
     # Classes usable in the constructor
     # Button types
-    DEFAULT = 'btn-default'
-    PRIMARY = 'btn-primary'
-    SUCCESS = 'btn-success'
-    INFO = 'btn-info'
-    WARNING = 'btn-warning'
-    DANGER = 'btn-danger'
-    LINK = 'btn-link'
+    DEFAULT = "btn-default"
+    PRIMARY = "btn-primary"
+    SUCCESS = "btn-success"
+    INFO = "btn-info"
+    WARNING = "btn-warning"
+    DANGER = "btn-danger"
+    LINK = "btn-link"
 
     # Button sizes
-    LARGE = 'btn-lg'
-    MEDIUM = 'btn-md'
-    SMALL = 'btn-sm'
-    EXTRA_SMALL = 'btn-xs'
+    LARGE = "btn-lg"
+    MEDIUM = "btn-md"
+    SMALL = "btn-sm"
+    EXTRA_SMALL = "btn-xs"
 
     # Shape
-    BLOCK = 'btn-block'
+    BLOCK = "btn-block"
 
     def __init__(self, parent, *text, **kwargs):
-        logger = kwargs.pop('logger', None)
+        logger = kwargs.pop("logger", None)
         Widget.__init__(self, parent, logger=logger)
         self.args = text
         self.kwargs = kwargs
-        classes = kwargs.pop('classes', [])
+        classes = kwargs.pop("classes", [])
         if text:
             if kwargs:  # classes should have been the only kwarg combined with text args
-                raise TypeError('If you pass button text then only pass classes in addition')
+                raise TypeError("If you pass button text then only pass classes in addition")
             if len(text) == 1:
-                self.locator_conditions = 'normalize-space(.)={}'.format(quote(text[0]))
-            elif len(text) == 2 and text[0].lower() == 'contains':
-                self.locator_conditions = 'contains(normalize-space(.), {})'.format(quote(text[1]))
+                self.locator_conditions = f"normalize-space(.)={quote(text[0])}"
+            elif len(text) == 2 and text[0].lower() == "contains":
+                self.locator_conditions = f"contains(normalize-space(.), {quote(text[1])})"
             else:
-                raise TypeError('An illegal combination of text params')
+                raise TypeError("An illegal combination of text params")
         else:
             # Join the kwargs, if any
-            self.locator_conditions = ' and '.join(
-                ['@{}={}'.format(attr, quote(value))
-                 for attr, value in kwargs.items()]
+            self.locator_conditions = " and ".join(
+                [f"@{attr}={quote(value)}" for attr, value in kwargs.items()]
             )
 
         if classes:
             if self.locator_conditions:
-                self.locator_conditions += ' and '
-            self.locator_conditions += ' and '.join(
-                'contains(@class, {})'.format(quote(klass))
-                for klass in classes)
+                self.locator_conditions += " and "
+            self.locator_conditions += " and ".join(
+                f"contains(@class, {quote(klass)})" for klass in classes
+            )
         if self.locator_conditions:
-            self.locator_conditions = 'and ({})'.format(self.locator_conditions)
+            self.locator_conditions = f"and ({self.locator_conditions})"
 
     # TODO: Handle input value the same way as text for other tags
     def __locator__(self):
         return (
             './/*[(self::a or self::button or (self::input and (@type="button" or @type="submit")))'
-            ' and contains(@class, "btn") {}]'.format(self.locator_conditions))
+            ' and contains(@class, "btn") {}]'.format(self.locator_conditions)
+        )
 
     @property
     def active(self):
-        return 'active' in self.browser.classes(self)
+        return "active" in self.browser.classes(self)
 
     @property
     def disabled(self):
-        return ('disabled' in self.browser.classes(self) or
-                self.browser.get_attribute('disabled', self) == 'disabled' or
-                self.browser.get_attribute('disabled', self) == 'true')
+        return (
+            "disabled" in self.browser.classes(self)
+            or self.browser.get_attribute("disabled", self) == "disabled"
+            or self.browser.get_attribute("disabled", self) == "true"
+        )
 
     def __repr__(self):
-        return '{}{}'.format(type(self).__name__, call_sig(self.args, self.kwargs))
+        return f"{type(self).__name__}{call_sig(self.args, self.kwargs)}"
 
     @property
     def title(self):
-        return self.browser.get_attribute('title', self)
+        return self.browser.get_attribute("title", self)
 
     def fill(self, value):
         if value:
@@ -213,23 +217,24 @@ class Button(Widget, ClickableMixin):
 class ViewChangeButton(Widget, ClickableMixin):
     """A PatternFly/Bootstrap view selection button in CFME 56z
 
-        .. code-block:: python
+    .. code-block:: python
 
-            ViewChangeButton(title='Grid View')
-            assert button.active
+        ViewChangeButton(title='Grid View')
+        assert button.active
     """
+
     CHECK_VISIBILITY = True
 
     def __init__(self, parent, title, **kwargs):
-        Widget.__init__(self, parent, logger=kwargs.pop('logger', None))
+        Widget.__init__(self, parent, logger=kwargs.pop("logger", None))
         self.title = title
 
     def __locator__(self):
-        return './/a[(@title={}) and i[contains(@class, "fa")]]'.format(quote(self.title))
+        return f'.//a[(@title={quote(self.title)}) and i[contains(@class, "fa")]]'
 
     @property
     def active(self):
-        return 'active' in self.browser.classes('..', parent=self)
+        return "active" in self.browser.classes("..", parent=self)
 
 
 class Input(TextInput):
@@ -237,6 +242,7 @@ class Input(TextInput):
 
     Has some additional methods.
     """
+
     WARNING_LOCATOR = "./following-sibling::div"
     HELP_BLOCK_LOCATOR = "./following-sibling::span"
 
@@ -261,14 +267,17 @@ class Input(TextInput):
 
 class NavDropdown(Widget, ClickableMixin):
     """The dropdowns used eg. in navigation. Usually located in the top navbar."""
-    EXPAND_LOCATOR = ('./a["aria-expanded" and '
-                      '"aria-haspopup" and '
-                      'contains(@class, "dropdown-toggle")]')
-    TEXT_LOCATOR = './a//p'
 
-    ROOT = ParametrizedLocator('//nav'
-                               '//li[.//a[@id={@id|quote} and contains(@class, "dropdown-toggle")]'
-                               ' and contains(@class, "dropdown")]')
+    EXPAND_LOCATOR = (
+        './a["aria-expanded" and ' '"aria-haspopup" and ' 'contains(@class, "dropdown-toggle")]'
+    )
+    TEXT_LOCATOR = "./a//p"
+
+    ROOT = ParametrizedLocator(
+        "//nav"
+        '//li[.//a[@id={@id|quote} and contains(@class, "dropdown-toggle")]'
+        ' and contains(@class, "dropdown")]'
+    )
 
     def __init__(self, parent, id=None, logger=None):
         """id is optional to allow for easy subclass change of ROOT"""
@@ -291,7 +300,7 @@ class NavDropdown(Widget, ClickableMixin):
     def expanded(self):
         if not self.expandable:
             return False
-        return 'open' in self.browser.classes(self)
+        return "open" in self.browser.classes(self)
 
     @property
     def collapsed(self):
@@ -299,13 +308,13 @@ class NavDropdown(Widget, ClickableMixin):
 
     def expand(self):
         if not self.expandable:
-            raise ValueError('{} is not expandable'.format(self.locator))
+            raise ValueError(f"{self.locator} is not expandable")
         if not self.expanded:
             self.click()
             if not self.expanded:
-                raise Exception('Could not expand {}'.format(self.locator))
+                raise Exception(f"Could not expand {self.locator}")
             else:
-                self.logger.info('expanded')
+                self.logger.info("expanded")
 
     def collapse(self):
         if not self.expandable:
@@ -313,9 +322,9 @@ class NavDropdown(Widget, ClickableMixin):
         if self.expanded:
             self.click()
             if self.expanded:
-                raise Exception('Could not collapse {}'.format(self.locator))
+                raise Exception(f"Could not collapse {self.locator}")
             else:
-                self.logger.info('collapsed')
+                self.logger.info("collapsed")
 
     @property
     def text(self):
@@ -330,7 +339,7 @@ class NavDropdown(Widget, ClickableMixin):
         try:
             el = self.browser.element('./a/span[contains(@class, "pficon")]', parent=self)
             for class_ in self.browser.classes(el):
-                if class_.startswith('pficon-'):
+                if class_.startswith("pficon-"):
                     return class_[7:]
             else:
                 return None
@@ -341,29 +350,30 @@ class NavDropdown(Widget, ClickableMixin):
     def items(self):
         return [
             self.browser.text(element)
-            for element
-            in self.browser.elements('./ul/li[not(contains(@class, "divider"))]', parent=self)]
+            for element in self.browser.elements(
+                './ul/li[not(contains(@class, "divider"))]', parent=self
+            )
+        ]
 
     def has_item(self, item):
         return item in self.items
 
     def item_enabled(self, item):
         if not self.has_item(item):
-            raise ValueError('There is not such item {}'.format(item))
-        element = self.browser.element(
-            './ul/li[normalize-space(.)={}]'.format(quote(item)), parent=self)
-        return 'disabled' not in self.browser.classes(element)
+            raise ValueError(f"There is not such item {item}")
+        element = self.browser.element(f"./ul/li[normalize-space(.)={quote(item)}]", parent=self)
+        return "disabled" not in self.browser.classes(element)
 
     def select_item(self, item):
         if not self.item_enabled(item):
-            raise ValueError('Cannot click disabled item {}'.format(item))
+            raise ValueError(f"Cannot click disabled item {item}")
 
         self.expand()
-        self.logger.info('selecting item {}'.format(item))
-        self.browser.click('./ul/li[normalize-space(.)={}]'.format(quote(item)), parent=self)
+        self.logger.info(f"selecting item {item}")
+        self.browser.click(f"./ul/li[normalize-space(.)={quote(item)}]", parent=self)
 
     def __repr__(self):
-        return '{}(id={!r})'.format(type(self).__name__, self.id)
+        return f"{type(self).__name__}(id={self.id!r})"
 
 
 class BootstrapNav(Widget):
@@ -382,18 +392,19 @@ class BootstrapNav(Widget):
 
     See http://getbootstrap.com/components/#nav for more information on Bootstrap nav components.
     """
-    ROOT = ParametrizedLocator('{@locator}')
-    ITEM_LOCATOR = './/li'
+
+    ROOT = ParametrizedLocator("{@locator}")
+    ITEM_LOCATOR = ".//li"
     CURRENTLY_SELECTED = './/li[contains(@class, "active")]/a'
-    TEXT_MATCHING = './/li/a[text()={txt}]'
-    PARTIAL_TEXT = './/li/a[contains(normalize-space(.), {txt})]'
-    ATTR_MATCHING = './/li/a[@{attr}={txt}]'
+    TEXT_MATCHING = ".//li/a[text()={txt}]"
+    PARTIAL_TEXT = ".//li/a[contains(normalize-space(.), {txt})]"
+    ATTR_MATCHING = ".//li/a[@{attr}={txt}]"
     TEXT_DISABLED = './/li[contains(@class, "disabled")]/a[text()={txt}]'
     PARTIAL_TEXT_DISABLED = (
         './/li[contains(@class, "disabled")]/a[contains(normalize-space(.), {txt})]'
     )
     ATTR_DISABLED = './/li[contains(@class, "disabled")]/a[@{attr}={txt}]'
-    VALID_ATTRS = {'href', 'title', 'class', 'id'}
+    VALID_ATTRS = {"href", "title", "class", "id"}
 
     def __init__(self, parent, locator, logger=None):
         """Create the widget"""
@@ -402,7 +413,7 @@ class BootstrapNav(Widget):
 
     def __repr__(self):
         """String representation of this object"""
-        return '{}({!r})'.format(type(self).__name__, self.locator)
+        return f"{type(self).__name__}({self.locator!r})"
 
     @property
     def currently_selected(self):
@@ -421,30 +432,30 @@ class BootstrapNav(Widget):
 
     def select(self, text=None, **kwargs):
         """
-            Select/click an item from the menu
+        Select/click an item from the menu
 
-            Args:
-                text: text of the link to be selected, If you want to partial text match,
-                 use the :py:class:`BootstrapNav.partial` to wrap the value.
+        Args:
+            text: text of the link to be selected, If you want to partial text match,
+             use the :py:class:`BootstrapNav.partial` to wrap the value.
         """
         if text:
             # Select an item based on the text of that item
             if isinstance(text, partial_match):
                 text = text.item
                 link = self.browser.element(self.PARTIAL_TEXT.format(txt=quote(text)), parent=self)
-                self.logger.info('selecting by partial matching text: %r', text)
+                self.logger.info("selecting by partial matching text: %r", text)
             else:
                 link = self.browser.element(self.TEXT_MATCHING.format(txt=quote(text)), parent=self)
-                self.logger.info('selecting by full matching text: %r', text)
+                self.logger.info("selecting by full matching text: %r", text)
         elif self.VALID_ATTRS & set(kwargs.keys()):
             # Select an item based on an attribute, if it is one of the VALID_ATTRS
             attr = (self.VALID_ATTRS & set(kwargs.keys())).pop()
             link = self.browser.element(
-                self.ATTR_MATCHING.format(attr=attr, txt=quote(kwargs[attr])))
+                self.ATTR_MATCHING.format(attr=attr, txt=quote(kwargs[attr]))
+            )
         else:
             # If neither text, nor one of the VALID_ATTRS is supplied, raise a KeyError
-            raise KeyError(
-                'Either text or one of {} needs to be specified'.format(self.VALID_ATTRS))
+            raise KeyError(f"Either text or one of {self.VALID_ATTRS} needs to be specified")
         self.browser.click(link)
 
     def is_disabled(self, text=None, **kwargs):
@@ -462,8 +473,7 @@ class BootstrapNav(Widget):
             xpath = self.ATTR_DISABLED.format(attr=attr, txt=quote(kwargs[attr]))
         else:
             # If neither text, nor one of the VALID_ATTRS is supplied, raise a KeyError
-            raise KeyError(
-                'Either text or one of {} needs to be specified'.format(self.VALID_ATTRS))
+            raise KeyError(f"Either text or one of {self.VALID_ATTRS} needs to be specified")
         try:
             self.browser.element(xpath, parent=self)
             return True
@@ -481,8 +491,7 @@ class BootstrapNav(Widget):
             xpath = self.ATTR_MATCHING.format(attr=attr, txt=quote(kwargs[attr]))
         else:
             # If neither text, nor one of the VALID_ATTRS is supplied, raise a KeyError
-            raise KeyError(
-                'Either text or one of {} needs to be specified'.format(self.VALID_ATTRS))
+            raise KeyError(f"Either text or one of {self.VALID_ATTRS} needs to be specified")
         try:
             self.browser.element(xpath, parent=self)
             return True
@@ -492,14 +501,15 @@ class BootstrapNav(Widget):
 
 class VerticalNavigation(Widget):
     """The Patternfly Vertical navigation."""
+
     CURRENTLY_SELECTED = './/li[contains(@class, "active")]/a'
-    LINKS = './li/a'
-    ITEMS_MATCHING = './li[a[normalize-space(.)={}]]'
-    DIV_LINKS_MATCHING = './ul/li/a[span[normalize-space(.)={txt}] or @href={txt}]'
+    LINKS = "./li/a"
+    ITEMS_MATCHING = "./li[a[normalize-space(.)={}]]"
+    DIV_LINKS_MATCHING = "./ul/li/a[span[normalize-space(.)={txt}] or @href={txt}]"
     SUB_LEVEL = './following-sibling::div[contains(@class, "nav-pf-")]'
     SUB_ITEM_LIST = './div[contains(@class, "nav-pf-")]/ul'
     CHILD_UL_FOR_DIV = './li[a[normalize-space(.)={}]]/div[contains(@class, "nav-pf-")]/ul'
-    MATCHING_LI_FOR_DIV = './ul/li[a[span[normalize-space(.)={}]]]'
+    MATCHING_LI_FOR_DIV = "./ul/li[a[span[normalize-space(.)={}]]]"
 
     def __init__(self, parent, locator, logger=None):
         Widget.__init__(self, parent, logger=logger)
@@ -517,9 +527,7 @@ class VerticalNavigation(Widget):
         # Otherwise
         current_item = self
         for i, level in enumerate(levels):
-            li = self.browser.element(
-                self.ITEMS_MATCHING.format(quote(level)),
-                parent=current_item)
+            li = self.browser.element(self.ITEMS_MATCHING.format(quote(level)), parent=current_item)
 
             try:
                 current_item = self.browser.element(self.SUB_ITEM_LIST, parent=li)
@@ -531,7 +539,8 @@ class VerticalNavigation(Widget):
                     raise
 
         return [
-            self.browser.text(el) for el in self.browser.elements(self.LINKS, parent=current_item)]
+            self.browser.text(el) for el in self.browser.elements(self.LINKS, parent=current_item)
+        ]
 
     def nav_item_tree(self, start=None):
         start = start or []
@@ -548,8 +557,8 @@ class VerticalNavigation(Widget):
     def currently_selected(self):
         return [
             self.browser.text(el)
-            for el
-            in self.browser.elements(self.CURRENTLY_SELECTED, parent=self)]
+            for el in self.browser.elements(self.CURRENTLY_SELECTED, parent=self)
+        ]
 
     def select(self, *levels, handle_alert=True, anyway=True):
         """Select an item in the navigation.
@@ -562,7 +571,7 @@ class VerticalNavigation(Widget):
             it will click it anyway. If you pass ``anyway=False``, it won't click it.
         """
         levels = list(levels)
-        self.logger.info('Selecting %r in navigation', levels)
+        self.logger.info("Selecting %r in navigation", levels)
         if levels == self.currently_selected and not anyway:
             return
 
@@ -572,19 +581,19 @@ class VerticalNavigation(Widget):
             passed_levels.append(level)
             finished = passed_levels == levels
             link = self.browser.element(
-                self.DIV_LINKS_MATCHING.format(txt=quote(level)), parent=current_div)
-            expands = bool(
-                self.browser.elements(self.SUB_LEVEL, parent=link))
+                self.DIV_LINKS_MATCHING.format(txt=quote(level)), parent=current_div
+            )
+            expands = bool(self.browser.elements(self.SUB_LEVEL, parent=link))
             if expands and not finished:
-                self.logger.debug('moving to %s to open the next level', level)
+                self.logger.debug("moving to %s to open the next level", level)
                 # No safety check because previous command did it
                 self.browser.move_to_element(link, check_safe=False)
 
-                @wait_for_decorator(timeout='10s', delay=0.2)
+                @wait_for_decorator(timeout="10s", delay=0.2)
                 def other_div_displayed():
-                    return 'is-hover' in self.browser.classes(
-                        self.MATCHING_LI_FOR_DIV.format(quote(level)),
-                        parent=current_div)
+                    return "is-hover" in self.browser.classes(
+                        self.MATCHING_LI_FOR_DIV.format(quote(level)), parent=current_div
+                    )
 
                 new_div = self.get_child_div_for(*passed_levels)
                 # No safety check because previous command did it
@@ -592,10 +601,11 @@ class VerticalNavigation(Widget):
                 current_div = new_div
             elif not expands and not finished:
                 raise ValueError(
-                    'You are trying to expand {!r} which cannot be expanded'.format(passed_levels))
+                    f"You are trying to expand {passed_levels!r} which cannot be expanded"
+                )
             else:
                 # finished
-                self.logger.debug('finishing the menu selection by clicking on %s', level)
+                self.logger.debug("finishing the menu selection by clicking on %s", level)
                 # No safety check because previous command did it
                 self.browser.click(link, ignore_ajax=True, check_safe=False)
                 if handle_alert:
@@ -606,15 +616,15 @@ class VerticalNavigation(Widget):
         for level in levels:
             try:
                 current = self.browser.element(
-                    self.CHILD_UL_FOR_DIV.format(quote(level)),
-                    parent=current)
+                    self.CHILD_UL_FOR_DIV.format(quote(level)), parent=current
+                )
             except NoSuchElementException:
                 return None
 
-        return self.browser.element('..', parent=current)
+        return self.browser.element("..", parent=current)
 
     def __repr__(self):
-        return '{}({!r})'.format(type(self).__name__, self.locator)
+        return f"{type(self).__name__}({self.locator!r})"
 
 
 class Tab(View):
@@ -625,22 +635,24 @@ class Tab(View):
 
     You can specify your own ``ROOT`` attribute on the class.
     """
+
     #: The text on the tab. If it is the same as the tab class name capitalized, can be omitted
     TAB_NAME = None
 
     #: Locator of the Tab selector
     TAB_LOCATOR = ParametrizedLocator(
-        './/ul[contains(@class, "nav-tabs")]/li[./a[normalize-space(.)={@tab_name|quote}]]')
+        './/ul[contains(@class, "nav-tabs")]/li[./a[normalize-space(.)={@tab_name|quote}]]'
+    )
 
     @property
     def tab_name(self):
         return self.TAB_NAME or type(self).__name__.capitalize()
 
     def is_active(self):
-        return 'active' in self.parent_browser.classes(self.TAB_LOCATOR)
+        return "active" in self.parent_browser.classes(self.TAB_LOCATOR)
 
     def is_disabled(self):
-        return 'disabled' in self.parent_browser.classes(self.TAB_LOCATOR)
+        return "disabled" in self.parent_browser.classes(self.TAB_LOCATOR)
 
     @property
     def is_displayed(self):
@@ -652,9 +664,8 @@ class Tab(View):
     def select(self):
         if not self.is_active():
             if self.is_disabled():
-                raise ValueError(
-                    'The tab {} you are trying to select is disabled'.format(self.tab_name))
-            self.logger.info('opened the tab %s', self.tab_name)
+                raise ValueError(f"The tab {self.tab_name} you are trying to select is disabled")
+            self.logger.info("opened the tab %s", self.tab_name)
             self.click()
 
     def child_widget_accessed(self, widget):
@@ -662,7 +673,7 @@ class Tab(View):
         self.select()
 
     def __repr__(self):
-        return '<Tab {!r}>'.format(self.tab_name)
+        return f"<Tab {self.tab_name!r}>"
 
 
 class GenericTabWithDropdown(Tab):
@@ -671,53 +682,53 @@ class GenericTabWithDropdown(Tab):
     Does not support automatic reveal of the tab upon access as the default dropdown item is not
     specified.
     """
+
     def is_dropdown(self):
-        return 'dropdown' in self.parent_browser.classes(self.TAB_LOCATOR)
+        return "dropdown" in self.parent_browser.classes(self.TAB_LOCATOR)
 
     def is_open(self):
-        return 'open' in self.parent_browser.classes(self.TAB_LOCATOR)
+        return "open" in self.parent_browser.classes(self.TAB_LOCATOR)
 
     def open(self):
         if not self.is_open():
-            self.logger.info('opened the tab %s', self.tab_name)
+            self.logger.info("opened the tab %s", self.tab_name)
             self.click()
 
     def close(self):
         if self.is_open():
-            self.logger.info('closed the tab %s', self.tab_name)
+            self.logger.info("closed the tab %s", self.tab_name)
             self.click()
 
     def select(self, sub_item):
         if not self.is_dropdown():
-            raise TypeError('{} is not a tab with dropdown and CHECK_IF_DROPDOWN is True')
+            raise TypeError("{} is not a tab with dropdown and CHECK_IF_DROPDOWN is True")
         self.open()
         parent = self.parent_browser.element(self.TAB_LOCATOR)
-        self.logger.info('clicking the sub-item %r', sub_item)
-        self.parent_browser.click(
-            './ul/li[normalize-space(.)={}]'.format(quote(sub_item)),
-            parent=parent)
+        self.logger.info("clicking the sub-item %r", sub_item)
+        self.parent_browser.click(f"./ul/li[normalize-space(.)={quote(sub_item)}]", parent=parent)
 
     def child_widget_accessed(self, widget):
         """Nothing. Since we don't know which sub_item."""
 
     def __repr__(self):
-        return '<TabWithDropdown {!r}>'.format(self.tab_name)
+        return f"<TabWithDropdown {self.tab_name!r}>"
 
 
 class TabWithDropdown(GenericTabWithDropdown):
     """Tab with the dropdown and its selection item set so child_widget_accessed work as usual."""
+
     #: Specify the dropdown item here
     SUB_ITEM = None
 
     def select(self):
-        return super(TabWithDropdown, self).select(self.SUB_ITEM)
+        return super().select(self.SUB_ITEM)
 
     def child_widget_accessed(self, widget):
         # Redefine it back like in Tab since TabWithDropdown removes it
         self.select()
 
     def __repr__(self):
-        return '<TabWithDropdownDefault {!r}>'.format(self.tab_name)
+        return f"<TabWithDropdownDefault {self.tab_name!r}>"
 
 
 class Accordion(View, ClickableMixin):
@@ -735,15 +746,20 @@ class Accordion(View, ClickableMixin):
     Accordions can contain trees. Basic ``TREE_LOCATOR`` is tuned after ManageIQ so if your UI has a
     different structure, you should change this locator accordingly.
     """
+
     ACCORDION_NAME = None
     ROOT = ParametrizedLocator(
         './/div[contains(@class, "panel-group")]/div[contains(@class, "panel") and '
-        './div/h4/a[normalize-space(.)={@accordion_name|quote}]]')
-    TREE_LOCATOR = '|'.join([
-        './/miq-tree-view',
-        './/div[contains(@class, "treeview") and ./ul]',
-        './/div[./ul[contains(@class, "dynatree-container")]]'])
-    HEADER_LOCATOR = './div/h4/a'
+        "./div/h4/a[normalize-space(.)={@accordion_name|quote}]]"
+    )
+    TREE_LOCATOR = "|".join(
+        [
+            ".//miq-tree-view",
+            './/div[contains(@class, "treeview") and ./ul]',
+            './/div[./ul[contains(@class, "dynatree-container")]]',
+        ]
+    )
+    HEADER_LOCATOR = "./div/h4/a"
 
     @property
     def accordion_name(self):
@@ -751,14 +767,14 @@ class Accordion(View, ClickableMixin):
 
     @property
     def is_opened(self):
-        attr = self.browser.get_attribute('aria-expanded', self)
+        attr = self.browser.get_attribute("aria-expanded", self)
         if attr is None:
             # Try other way
             panel = self.browser.element('./div[contains(@class, "panel-collapse")]')
             classes = self.browser.classes(panel)
-            return 'collapse' in classes and 'in' in classes
+            return "collapse" in classes and "in" in classes
         else:
-            return attr.lower().strip() == 'true'
+            return attr.lower().strip() == "true"
 
     @property
     def is_closed(self):
@@ -770,24 +786,24 @@ class Accordion(View, ClickableMixin):
 
     def open(self):
         if self.is_closed:
-            self.logger.info('opening')
+            self.logger.info("opening")
             self.click()
             try:
                 wait_for(lambda: self.is_opened, delay=0.1, num_sec=3)
             except TimedOutError:
-                self.logger.warning('Could not open the accordion, trying clicking again')
+                self.logger.warning("Could not open the accordion, trying clicking again")
                 # Workaround stupid pages, perhaps we put a try mechanism in here
                 if self.is_closed:
                     self.click()
                     try:
                         wait_for(lambda: self.is_opened, delay=0.1, num_sec=3)
                     except TimedOutError:
-                        self.logger.error('Could not open the accordion')
-                        raise Exception('Could not open accordion {}'.format(self.accordion_name))
+                        self.logger.error("Could not open the accordion")
+                        raise Exception(f"Could not open accordion {self.accordion_name}")
 
     def close(self):
         if self.is_opened:
-            self.logger.info('closing')
+            self.logger.info("closing")
             self.click()
 
     def child_widget_accessed(self, widget):
@@ -797,19 +813,19 @@ class Accordion(View, ClickableMixin):
     def read(self):
         if self.is_closed:
             do_not_read_this_widget()
-        return super(Accordion, self).read()
+        return super().read()
 
     @cached_property
     def tree_id(self):
         try:
             el = self.browser.element(self.TREE_LOCATOR)
         except NoSuchElementException:
-            raise AttributeError('No tree in the accordion {}'.format(self.accordion_name))
+            raise AttributeError(f"No tree in the accordion {self.accordion_name}")
         else:
-            return self.browser.get_attribute('id', el) or self.browser.get_attribute('name', el)
+            return self.browser.get_attribute("id", el) or self.browser.get_attribute("name", el)
 
     def __repr__(self):
-        return '<Accordion {!r}>'.format(self.accordion_name)
+        return f"<Accordion {self.accordion_name!r}>"
 
 
 class BootstrapSelect(Widget, ClickableMixin):
@@ -822,55 +838,61 @@ class BootstrapSelect(Widget, ClickableMixin):
         can_hide_on_select: Whether the select can hide after selection, important for
             :py:meth:`close` to work properly.
     """
+
     Option = namedtuple("Option", ["text", "value"])
     LOCATOR_START = './/div[contains(@class, "bootstrap-select")]'
-    ROOT = ParametrizedLocator('{@locator}')
+    ROOT = ParametrizedLocator("{@locator}")
     BY_VISIBLE_TEXT = '//div/ul/li/a[./span[contains(@class, "text") and normalize-space(.)={}]]'
     BY_PARTIAL_VISIBLE_TEXT = (
-        '//div/ul/li/a[./span[contains(@class, "text") and contains(normalize-space(.), {})]]')
+        '//div/ul/li/a[./span[contains(@class, "text") and contains(normalize-space(.), {})]]'
+    )
 
     def __init__(
-            self, parent, id=None, name=None, locator=None, can_hide_on_select=False, logger=None):
+        self, parent, id=None, name=None, locator=None, can_hide_on_select=False, logger=None
+    ):
         Widget.__init__(self, parent, logger=logger)
         if id is not None:
-            self.locator = self.LOCATOR_START + '/button[normalize-space(@data-id)={}]/..'.format(
-                quote(id))
+            self.locator = self.LOCATOR_START + "/button[normalize-space(@data-id)={}]/..".format(
+                quote(id)
+            )
         elif name is not None:
-            self.locator = self.LOCATOR_START + '/select[normalize-space(@name)={}]/..'.format(
-                quote(name))
+            self.locator = self.LOCATOR_START + "/select[normalize-space(@name)={}]/..".format(
+                quote(name)
+            )
         elif locator is not None:
             self.locator = locator
         else:
-            raise TypeError('You need to specify either, id, name or locator for BootstrapSelect')
+            raise TypeError("You need to specify either, id, name or locator for BootstrapSelect")
         self.id = id
         self.can_hide_on_select = can_hide_on_select
 
     @property
     def is_open(self):
         try:
-            return 'open' in self.browser.classes(self)
+            return "open" in self.browser.classes(self)
         except StaleElementReferenceException:
             self.logger.warning(
-                'Got a StaleElementReferenceException in .is_open, but ignoring. Returned False.')
+                "Got a StaleElementReferenceException in .is_open, but ignoring. Returned False."
+            )
             return False
 
     @property
     def is_multiple(self):
-        return 'show-tick' in self.browser.classes(self)
+        return "show-tick" in self.browser.classes(self)
 
     def open(self):
         if not self.is_open:
             self.click()
-            self.logger.debug('opened')
+            self.logger.debug("opened")
 
     def close(self):
         try:
             if self.is_open:
                 self.click()
-                self.logger.debug('closed')
+                self.logger.debug("closed")
         except NoSuchElementException:
             if self.can_hide_on_select:
-                self.logger.info('While closing %r it disappeared, but ignoring.', self)
+                self.logger.info("While closing %r it disappeared, but ignoring.", self)
             else:
                 raise
 
@@ -884,39 +906,47 @@ class BootstrapSelect(Widget, ClickableMixin):
         """
         if len(items) > 1 and not self.is_multiple:
             raise ValueError(
-                'The BootstrapSelect {} does not allow multiple selections'.format(self.locator))
+                f"The BootstrapSelect {self.locator} does not allow multiple selections"
+            )
         self.open()
         for item in items:
             if isinstance(item, partial_match):
                 item = item.item
-                self.logger.info('selecting by partial visible text: %r', item)
+                self.logger.info("selecting by partial visible text: %r", item)
                 try:
                     self.browser.click(
-                        self.BY_PARTIAL_VISIBLE_TEXT.format(quote(item)), parent=self,
-                        force_scroll=True)
+                        self.BY_PARTIAL_VISIBLE_TEXT.format(quote(item)),
+                        parent=self,
+                        force_scroll=True,
+                    )
                 except NoSuchElementException:
                     try:
                         # Added this as for some views(some tags pages) dropdown is separated from
                         # button and doesn't have exact id or name
                         self.browser.click(
-                            self.BY_PARTIAL_VISIBLE_TEXT.format(quote(item)), force_scroll=True)
+                            self.BY_PARTIAL_VISIBLE_TEXT.format(quote(item)), force_scroll=True
+                        )
                     except NoSuchElementException:
-                        raise SelectItemNotFound(widget=self, item=item,
-                                                 options=[opt.text for opt in self.all_options])
+                        raise SelectItemNotFound(
+                            widget=self, item=item, options=[opt.text for opt in self.all_options]
+                        )
             else:
-                self.logger.info('selecting by visible text: %r', item)
+                self.logger.info("selecting by visible text: %r", item)
                 try:
-                    self.browser.click(self.BY_VISIBLE_TEXT.format(quote(item)),
-                                       parent=self, force_scroll=True)
+                    self.browser.click(
+                        self.BY_VISIBLE_TEXT.format(quote(item)), parent=self, force_scroll=True
+                    )
                 except NoSuchElementException:
                     try:
                         # Added this as for some views(some tags pages) dropdown is separated from
                         # button and doesn't have exact id or name
-                        self.browser.click(self.BY_VISIBLE_TEXT.format(quote(item)),
-                                           force_scroll=True)
+                        self.browser.click(
+                            self.BY_VISIBLE_TEXT.format(quote(item)), force_scroll=True
+                        )
                     except NoSuchElementException:
-                        raise SelectItemNotFound(widget=self, item=item,
-                                                 options=[opt.text for opt in self.all_options])
+                        raise SelectItemNotFound(
+                            widget=self, item=item, options=[opt.text for opt in self.all_options]
+                        )
         self.close()
 
     @property
@@ -925,7 +955,9 @@ class BootstrapSelect(Widget, ClickableMixin):
             self.browser.text(e)
             for e in self.browser.elements(
                 './div/ul/li[contains(@class, "selected")]/a/span[contains(@class, "text")]',
-                parent=self)]
+                parent=self,
+            )
+        ]
 
     @property
     def all_options(self):
@@ -933,9 +965,9 @@ class BootstrapSelect(Widget, ClickableMixin):
         return [
             self.Option(
                 b.text(b.element('.//span[contains(@class, "text")]', parent=e)),
-                e.get_attribute("data-original-index")
+                e.get_attribute("data-original-index"),
             )
-            for e in b.elements('./div/ul/li', parent=self)
+            for e in b.elements("./div/ul/li", parent=self)
         ]
 
     @property
@@ -961,7 +993,7 @@ class BootstrapSelect(Widget, ClickableMixin):
             return True
 
     def __repr__(self):
-        return '{}(locator={!r})'.format(type(self).__name__, self.locator)
+        return f"{type(self).__name__}(locator={self.locator!r})"
 
 
 class BootstrapTreeview(Widget):
@@ -975,23 +1007,26 @@ class BootstrapTreeview(Widget):
     Args:
         tree_id: Id of the tree, the closest div or ``miq-tree-view`` to the root ``ul`` element.
     """
-    ROOT = ParametrizedLocator('|'.join([
-        './/miq-tree-view[@name={@tree_id|quote}]/div',
-        './/div[@id={@tree_id|quote}]'
-    ]))
-    ROOT_ITEM = './ul/li[1]'
+
+    ROOT = ParametrizedLocator(
+        "|".join([".//miq-tree-view[@name={@tree_id|quote}]/div", ".//div[@id={@tree_id|quote}]"])
+    )
+    ROOT_ITEM = "./ul/li[1]"
     ROOT_ITEMS = './ul/li[not(./span[contains(@class, "indent")])]'
     ROOT_ITEMS_WITH_TEXT = (
-        './ul/li[not(./span[contains(@class, "indent")]) and contains(normalize-space(.), {text})]')
+        './ul/li[not(./span[contains(@class, "indent")]) and contains(normalize-space(.), {text})]'
+    )
     SELECTED_ITEM = './ul/li[contains(@class, "node-selected")]'
     CHILD_ITEMS = (
-        './ul/li[starts-with(@data-nodeid, {id}) and not(@data-nodeid={id})'
-        ' and count(./span[contains(@class, "indent")])={indent}]')
+        "./ul/li[starts-with(@data-nodeid, {id}) and not(@data-nodeid={id})"
+        ' and count(./span[contains(@class, "indent")])={indent}]'
+    )
     CHILD_ITEMS_TEXT = (
-        './ul/li[starts-with(@data-nodeid, {id}) and not(@data-nodeid={id})'
-        ' and (contains(@title, {text}) or contains(normalize-space(.), {text}))'
-        ' and count(./span[contains(@class, "indent")])={indent}]')
-    ITEM_BY_NODEID = './ul/li[@data-nodeid={}]'
+        "./ul/li[starts-with(@data-nodeid, {id}) and not(@data-nodeid={id})"
+        " and (contains(@title, {text}) or contains(normalize-space(.), {text}))"
+        ' and count(./span[contains(@class, "indent")])={indent}]'
+    )
+    ITEM_BY_NODEID = "./ul/li[@data-nodeid={}]"
     IS_EXPANDABLE = './span[contains(@class, "expand-icon")]'
     IS_EXPANDED = './span[contains(@class, "expand-icon") and contains(@class, "fa-angle-down")]'
     IS_LOADING = './span[contains(@class, "expand-icon") and contains(@class, "fa-spinner")]'
@@ -1016,8 +1051,9 @@ class BootstrapTreeview(Widget):
                 return self.parent.tree_id
             except AttributeError:
                 raise NameError(
-                    'You have to specify tree_id to BootstrapTreeview if the parent object does '
-                    'not implement .tree_id!')
+                    "You have to specify tree_id to BootstrapTreeview if the parent object does "
+                    "not implement .tree_id!"
+                )
 
     def image_getter(self, item):
         """Look up the image that is hidden in the style tag or as a tag.
@@ -1028,23 +1064,24 @@ class BootstrapTreeview(Widget):
         try:
             image_node = self.browser.element(
                 './span[contains(@class, "node-image") or contains(@class, "node-icon")]',
-                parent=item)
+                parent=item,
+            )
         except NoSuchElementException:
-            self.logger.warning('No image tag found')
+            self.logger.warning("No image tag found")
             return None
-        style = self.browser.get_attribute('style', image_node)
+        style = self.browser.get_attribute("style", image_node)
         if style:
             image_href = re.search(r'url\("([^"]+)"\)', style).groups()[0]
             try:
-                return re.search(r'/([^/]+)-[0-9a-f]+\.(?:png|svg)$', image_href).groups()[0]
+                return re.search(r"/([^/]+)-[0-9a-f]+\.(?:png|svg)$", image_href).groups()[0]
             except AttributeError:
                 return None
         else:
             classes = self.browser.classes(image_node)
             try:
-                return [c for c in classes if c.startswith(
-                    ('fa-', 'product-', 'vendor-', 'pficon-')
-                )][0]
+                return [
+                    c for c in classes if c.startswith(("fa-", "product-", "vendor-", "pficon-"))
+                ][0]
             except IndexError:
                 return None
 
@@ -1060,11 +1097,11 @@ class BootstrapTreeview(Widget):
     @property
     def currently_selected(self):
         if self.selected_item is not None:
-            nodeid = self.get_nodeid(self.selected_item).split('.')
-            root_id_len = len(self.get_nodeid(self.root_item).split('.'))
+            nodeid = self.get_nodeid(self.selected_item).split(".")
+            root_id_len = len(self.get_nodeid(self.root_item).split("."))
             result = []
             for end in range(root_id_len, len(nodeid) + 1):
-                current_nodeid = '.'.join(nodeid[:end])
+                current_nodeid = ".".join(nodeid[:end])
                 text = self.browser.text(self.get_item_by_nodeid(current_nodeid))
                 result.append(text)
             return result
@@ -1110,10 +1147,10 @@ class BootstrapTreeview(Widget):
         return not self.is_expanded(item)
 
     def is_selected(self, item):
-        return 'node-selected' in self.browser.classes(item)
+        return "node-selected" in self.browser.classes(item)
 
     def get_nodeid(self, item):
-        return self.browser.get_attribute('data-nodeid', item)
+        return self.browser.get_attribute("data-nodeid", item)
 
     def get_expand_arrow(self, item):
         return self.browser.element(self.IS_EXPANDABLE, parent=item)
@@ -1131,7 +1168,8 @@ class BootstrapTreeview(Widget):
             nodeid = quote(self.get_nodeid(item))
             node_indents = self.indents(item)
             return self.browser.elements(
-                self.CHILD_ITEMS.format(id=nodeid, indent=node_indents + 1), parent=self)
+                self.CHILD_ITEMS.format(id=nodeid, indent=node_indents + 1), parent=self
+            )
         else:
             return self.browser.elements(self.ROOT_ITEMS, parent=self)
 
@@ -1152,7 +1190,8 @@ class BootstrapTreeview(Widget):
             node_indents = self.indents(item)
             return self.browser.elements(
                 self.CHILD_ITEMS_TEXT.format(id=nodeid, text=text, indent=node_indents + 1),
-                parent=self)
+                parent=self,
+            )
         else:
             return self.browser.elements(self.ROOT_ITEMS_WITH_TEXT.format(text=text), parent=self)
 
@@ -1161,13 +1200,15 @@ class BootstrapTreeview(Widget):
         try:
             return self.browser.element(self.ITEM_BY_NODEID.format(nodeid_q), parent=self)
         except NoSuchElementException:
-            raise CandidateNotFound({
-                'message':
-                    'Could not find the item with nodeid {} in Bootstrap tree {}'.format(
-                        nodeid,
-                        self.tree_id),
-                'path': '',
-                'cause': ''})
+            raise CandidateNotFound(
+                {
+                    "message": "Could not find the item with nodeid {} in Bootstrap tree {}".format(
+                        nodeid, self.tree_id
+                    ),
+                    "path": "",
+                    "cause": "",
+                }
+            )
 
     def expand_node(self, nodeid):
         """Expands a node given its nodeid. Must be visible
@@ -1180,21 +1221,21 @@ class BootstrapTreeview(Widget):
         """
         node = self.get_item_by_nodeid(nodeid)
         if not self.is_expandable(node):
-            self.logger.debug('Node %s not expandable on tree %s', nodeid, self.tree_id)
+            self.logger.debug("Node %s not expandable on tree %s", nodeid, self.tree_id)
             return False
         if self.is_collapsed(node):
-            self.logger.debug('Expanding collapsed node %s on tree %s', nodeid, self.tree_id)
+            self.logger.debug("Expanding collapsed node %s on tree %s", nodeid, self.tree_id)
             arrow = self.get_expand_arrow(node)
             self.browser.click(arrow)
             time.sleep(0.1)
             wait_for(
-                lambda: not self.is_loading(self.get_item_by_nodeid(nodeid)),
-                delay=0.2, num_sec=30)
+                lambda: not self.is_loading(self.get_item_by_nodeid(nodeid)), delay=0.2, num_sec=30
+            )
             wait_for(
-                lambda: self.is_expanded(self.get_item_by_nodeid(nodeid)),
-                delay=0.2, num_sec=10)
+                lambda: self.is_expanded(self.get_item_by_nodeid(nodeid)), delay=0.2, num_sec=10
+            )
         else:
-            self.logger.debug('Node %s already expanded on tree %s', nodeid, self.tree_id)
+            self.logger.debug("Node %s already expanded on tree %s", nodeid, self.tree_id)
         return True
 
     def collapse_node(self, nodeid):
@@ -1208,18 +1249,18 @@ class BootstrapTreeview(Widget):
         """
         node = self.get_item_by_nodeid(nodeid)
         if not self.is_expandable(node):
-            self.logger.debug('Node %s not expandable on tree %s', nodeid, self.tree_id)
+            self.logger.debug("Node %s not expandable on tree %s", nodeid, self.tree_id)
             return False
         if self.is_expanded(node):
-            self.logger.debug('Collapsing expanded node %s on tree %s', nodeid, self.tree_id)
+            self.logger.debug("Collapsing expanded node %s on tree %s", nodeid, self.tree_id)
             arrow = self.get_expand_arrow(node)
             self.browser.click(arrow)
             time.sleep(0.1)
             wait_for(
-                lambda: self.is_collapsed(self.get_item_by_nodeid(nodeid)),
-                delay=0.2, num_sec=10)
+                lambda: self.is_collapsed(self.get_item_by_nodeid(nodeid)), delay=0.2, num_sec=10
+            )
         else:
-            self.logger.debug('Node %s already collapsed on tree %s', nodeid, self.tree_id)
+            self.logger.debug("Node %s already collapsed on tree %s", nodeid, self.tree_id)
         return True
 
     def _process_step(self, step):
@@ -1244,16 +1285,16 @@ class BootstrapTreeview(Widget):
     def _repr_step(image, step):
         if isinstance(step, Pattern):
             # Make it look like r'pattern'
-            step_repr = 'r' + re.sub(r'^[^"\']', '', repr(step.pattern))
+            step_repr = "r" + re.sub(r'^[^"\']', "", repr(step.pattern))
         else:
             step_repr = step
         if image is None:
             return step_repr
         else:
-            return '{}[{}]'.format(step_repr, image)
+            return f"{step_repr}[{image}]"
 
     def pretty_path(self, path):
-        return '/'.join(self._repr_step(*self._process_step(step)) for step in path)
+        return "/".join(self._repr_step(*self._process_step(step)) for step in path)
 
     def validate_node(self, node, matcher, image):
         """Helper method that matches nodes by given conditions.
@@ -1298,36 +1339,42 @@ class BootstrapTreeview(Widget):
             :py:class:`CandidateNotFound` when the node is not found in the tree.
         """
         self.browser.plugin.ensure_page_safe()
-        self.logger.info('Expanding path %s on tree %s', self.pretty_path(path), self.tree_id)
+        self.logger.info("Expanding path %s on tree %s", self.pretty_path(path), self.tree_id)
         node = self.root_item
         if node is not None:
             step = path[0]
             steps_tried = [step]
             image, step = self._process_step(step)
             path = path[1:]
-            self.logger.debug('Validating presence of %r as the root item of the tree', step)
+            self.logger.debug("Validating presence of %r as the root item of the tree", step)
             if not self.validate_node(node, step, image):
-                raise CandidateNotFound({
-                    'message':
-                        'Could not find the item {} in Bootstrap tree {}'.format(
-                            self.pretty_path(steps_tried),
-                            self.tree_id),
-                    'path': path,
-                    'cause': 'Root node did not match {}'.format(self._repr_step(image, step))})
+                raise CandidateNotFound(
+                    {
+                        "message": "Could not find the item {} in Bootstrap tree {}".format(
+                            self.pretty_path(steps_tried), self.tree_id
+                        ),
+                        "path": path,
+                        "cause": f"Root node did not match {self._repr_step(image, step)}",
+                    }
+                )
         else:
             steps_tried = []
         for step in path:
             steps_tried.append(step)
-            self.logger.debug('Expanding %r', steps_tried)
+            self.logger.debug("Expanding %r", steps_tried)
             image, step = self._process_step(step)
             if node is not None and not self.expand_node(self.get_nodeid(node)):
-                raise CandidateNotFound({
-                    'message':
-                        'Could not find the item {} in Bootstrap tree {}'.format(
-                            self.pretty_path(steps_tried),
-                            self.tree_id),
-                    'path': path,
-                    'cause': 'Could not expand the {} node'.format(self._repr_step(image, step))})
+                raise CandidateNotFound(
+                    {
+                        "message": "Could not find the item {} in Bootstrap tree {}".format(
+                            self.pretty_path(steps_tried), self.tree_id
+                        ),
+                        "path": path,
+                        "cause": "Could not expand the {} node".format(
+                            self._repr_step(image, step)
+                        ),
+                    }
+                )
             if isinstance(step, str):
                 # To speed up the search when having a string to match, pick up items with that text
                 child_items = self.child_items_with_text(node, step)
@@ -1339,14 +1386,17 @@ class BootstrapTreeview(Widget):
                     node = child_item
                     break
             else:
-                raise CandidateNotFound({
-                    'message':
-                        'Could not find the item {} in Bootstrap tree {}'.format(
-                            self.pretty_path(steps_tried),
-                            self.tree_id),
-                    'path': path,
-                    'cause': 'Was not found in {}'.format(
-                        self._repr_step(*self._process_step(steps_tried[-2])))})
+                raise CandidateNotFound(
+                    {
+                        "message": "Could not find the item {} in Bootstrap tree {}".format(
+                            self.pretty_path(steps_tried), self.tree_id
+                        ),
+                        "path": path,
+                        "cause": "Was not found in {}".format(
+                            self._repr_step(*self._process_step(steps_tried[-2]))
+                        ),
+                    }
+                )
 
         return node
 
@@ -1356,7 +1406,7 @@ class BootstrapTreeview(Widget):
         See :py:meth:`expand_path` for more informations about synopsis.
         """
         node = self.expand_path(*path, **kwargs)
-        self.logger.info('clicking node %r', path[-1])
+        self.logger.info("clicking node %r", path[-1])
         self.browser.click(node)
         return node
 
@@ -1390,7 +1440,8 @@ class BootstrapTreeview(Widget):
             return self.read_contents(
                 nodeid=self.get_nodeid(self.root_item),
                 include_images=include_images,
-                collapse_after_read=collapse_after_read)
+                collapse_after_read=collapse_after_read,
+            )
 
         item = self.get_item_by_nodeid(nodeid)
         self.expand_node(nodeid)
@@ -1401,7 +1452,9 @@ class BootstrapTreeview(Widget):
                 self.read_contents(
                     nodeid=self.get_nodeid(child_item),
                     include_images=include_images,
-                    collapse_after_read=collapse_after_read))
+                    collapse_after_read=collapse_after_read,
+                )
+            )
 
         if collapse_after_read:
             self.collapse_node(nodeid)
@@ -1416,19 +1469,19 @@ class BootstrapTreeview(Widget):
             return this_item
 
     def __repr__(self):
-        return '{}({!r})'.format(type(self).__name__, self.tree_id)
+        return f"{type(self).__name__}({self.tree_id!r})"
 
 
 class CheckableBootstrapTreeview(BootstrapTreeview):
-    """ Checkable variation of CFME Tree. This widget not only expand a tree for a provided path,
+    """Checkable variation of CFME Tree. This widget not only expand a tree for a provided path,
     but also checks a checkbox.
     """
 
     IS_CHECKABLE = './span[contains(@class, "check-icon")]'
     IS_CHECKED = './span[contains(@class, "check-icon") and contains(@class, "fa-check-square-o")]'
 
-    CheckNode = namedtuple('CheckNode', ['path'])
-    UncheckNode = namedtuple('UncheckNode', ['path'])
+    CheckNode = namedtuple("CheckNode", ["path"])
+    UncheckNode = namedtuple("UncheckNode", ["path"])
 
     def is_checkable(self, item):
         return bool(self.browser.elements(self.IS_CHECKABLE, parent=item))
@@ -1439,11 +1492,14 @@ class CheckableBootstrapTreeview(BootstrapTreeview):
     def check_uncheck_node(self, check, *path, **kwargs):
         leaf = self.expand_path(*path, **kwargs)
         if not self.is_checkable(leaf):
-            raise TypeError('Item with path {} in {} is not checkable'.format(
-                self.pretty_path(path), self.tree_id))
+            raise TypeError(
+                "Item with path {} in {} is not checkable".format(
+                    self.pretty_path(path), self.tree_id
+                )
+            )
         checked = self.is_checked(leaf)
         if checked != check:
-            self.logger.info('%s %r', 'Checking' if check else 'Unchecking', path[-1])
+            self.logger.info("%s %r", "Checking" if check else "Unchecking", path[-1])
             self.browser.click(self.IS_CHECKABLE, parent=leaf)
             return True
         else:
@@ -1473,7 +1529,7 @@ class CheckableBootstrapTreeview(BootstrapTreeview):
             boolean for whether or not the path changed
         """
         if not isinstance(node, (self.CheckNode, self.UncheckNode)):
-            raise ValueError('node in must be CheckNode or UncheckNode namedtuple')
+            raise ValueError("node in must be CheckNode or UncheckNode namedtuple")
         return self.check_uncheck_node(isinstance(node, self.CheckNode), *node.path)
 
     def read(self):
@@ -1486,12 +1542,14 @@ class Dropdown(Widget):
     Args:
         text: Text of the button, can be the inner text or the title attribute.
     """
+
     ROOT = ParametrizedLocator(
         './/div[contains(@class, "dropdown") and ./button[normalize-space(.)={@text|quote} or '
-        'normalize-space(@title)={@text|quote}]]')
-    BUTTON_LOCATOR = './button'
-    ITEMS_LOCATOR = './ul/li/a'
-    ITEM_LOCATOR = './ul/li/a[normalize-space(.)={}]'
+        "normalize-space(@title)={@text|quote}]]"
+    )
+    BUTTON_LOCATOR = "./button"
+    ITEMS_LOCATOR = "./ul/li/a"
+    ITEM_LOCATOR = "./ul/li/a[normalize-space(.)={}]"
 
     def __init__(self, parent, text, logger=None):
         Widget.__init__(self, parent, logger=logger)
@@ -1501,11 +1559,11 @@ class Dropdown(Widget):
     def is_enabled(self):
         """Returns if the toolbar itself is enabled and therefore interactive."""
         button = self.browser.element(self.BUTTON_LOCATOR, parent=self)
-        return 'disabled' not in self.browser.classes(button)
+        return "disabled" not in self.browser.classes(button)
 
     def _verify_enabled(self):
         if not self.is_enabled:
-            raise DropdownDisabled('Dropdown "{}" is not enabled'.format(self.text))
+            raise DropdownDisabled(f'Dropdown "{self.text}" is not enabled')
 
     @property
     def currently_selected(self):
@@ -1517,7 +1575,7 @@ class Dropdown(Widget):
 
     @property
     def is_open(self):
-        return 'open' in self.browser.classes(self)
+        return "open" in self.browser.classes(self)
 
     def open(self):
         self._verify_enabled()
@@ -1536,7 +1594,7 @@ class Dropdown(Widget):
                 self.browser.click(self)
         except (NoSuchElementException, DropdownDisabled):
             if ignore_nonpresent:
-                self.logger.info('%r hid so it was not possible to close it. But ignoring.', self)
+                self.logger.info("%r hid so it was not possible to close it. But ignoring.", self)
             else:
                 raise
 
@@ -1544,7 +1602,8 @@ class Dropdown(Widget):
     def items(self):
         """Returns a list of all dropdown items as strings."""
         return [
-            self.browser.text(el) for el in self.browser.elements(self.ITEMS_LOCATOR, parent=self)]
+            self.browser.text(el) for el in self.browser.elements(self.ITEMS_LOCATOR, parent=self)
+        ]
 
     def has_item(self, item):
         """Returns whether the items exists.
@@ -1567,15 +1626,15 @@ class Dropdown(Widget):
             except NoSuchElementException:
                 items = []
             if items:
-                items_string = 'These items are present: {}'.format('; '.join(items))
+                items_string = "These items are present: {}".format("; ".join(items))
             else:
-                items_string = 'The dropdown is probably not present'
-            raise DropdownItemNotFound('Item {!r} not found. {}'.format(item, items_string))
+                items_string = "The dropdown is probably not present"
+            raise DropdownItemNotFound(f"Item {item!r} not found. {items_string}")
 
     def item_title(self, item):
         el = self.item_element(item)
-        li = self.browser.element('./a', parent=el)
-        return self.browser.get_attribute('title', li)
+        li = self.browser.element("./a", parent=el)
+        return self.browser.get_attribute("title", li)
 
     def item_enabled(self, item):
         """Returns whether the given item is enabled.
@@ -1588,8 +1647,8 @@ class Dropdown(Widget):
         """
         self._verify_enabled()
         el = self.item_element(item)
-        li = self.browser.element('..', parent=el)
-        return 'disabled' not in self.browser.classes(li)
+        li = self.browser.element("..", parent=el)
+        return "disabled" not in self.browser.classes(li)
 
     def item_select(self, item, handle_alert=None):
         """Opens the dropdown and selects the desired item.
@@ -1598,20 +1657,16 @@ class Dropdown(Widget):
             item: Item to be selected
             handle_alert: How to handle alerts. None - no handling, True - confirm, False - dismiss.
         """
-        self.logger.info('Selecting %r', item)
+        self.logger.info("Selecting %r", item)
         try:
             self.open()
             if not self.item_enabled(item):
                 reason = self.item_title(item)
                 raise DropdownItemDisabled(
                     'Item "{item}" of dropdown "{dropdown}" is disabled due to \n'
-                    '{reason}'
-                    'The following items are available: {available}'
-                    .format(
-                        item=item,
-                        dropdown=self.text,
-                        reason=reason,
-                        available=';'.join(self.items)
+                    "{reason}"
+                    "The following items are available: {available}".format(
+                        item=item, dropdown=self.text, reason=reason, available=";".join(self.items)
                     )
                 )
             self.browser.click(self.item_element(item), ignore_ajax=handle_alert is not None)
@@ -1622,7 +1677,7 @@ class Dropdown(Widget):
             try:
                 self.close(ignore_nonpresent=True)
             except UnexpectedAlertPresentException:
-                self.logger.warning('There is an unexpected alert present.')
+                self.logger.warning("There is an unexpected alert present.")
                 pass
 
     @property
@@ -1631,7 +1686,7 @@ class Dropdown(Widget):
         return self.browser.element(self.BUTTON_LOCATOR).get_attribute("title")
 
     def __repr__(self):
-        return '{}({!r})'.format(type(self).__name__, self.text)
+        return f"{type(self).__name__}({self.text!r})"
 
 
 class SelectorDropdown(Dropdown):
@@ -1644,8 +1699,10 @@ class SelectorDropdown(Dropdown):
         button_attr: Name of the attribute matched on the button inside the dropdown div
         button_attr_value: The value to match on that attr
     """
+
     ROOT = ParametrizedLocator(
-        './/div[contains(@class, "dropdown") and ./button[@{@b_attr}={@b_attr_value|quote}]]')
+        './/div[contains(@class, "dropdown") and ./button[@{@b_attr}={@b_attr_value|quote}]]'
+    )
 
     def __init__(self, parent, button_attr, button_attr_value, logger=None):
         # Skipping Dropdown init because it has nothing interesting for us
@@ -1654,7 +1711,7 @@ class SelectorDropdown(Dropdown):
         self.b_attr_value = button_attr_value
 
     def item_select(self, item, *args, **kwargs):
-        super(SelectorDropdown, self).item_select(item, *args, **kwargs)
+        super().item_select(item, *args, **kwargs)
         wait_for(lambda: self.currently_selected == item, num_sec=3, delay=0.2)
 
     def fill(self, value):
@@ -1664,11 +1721,11 @@ class SelectorDropdown(Dropdown):
         return True
 
     def __repr__(self):
-        return '{}({!r}, {!r})'.format(type(self).__name__, self.b_attr, self.b_attr_value)
+        return f"{type(self).__name__}({self.b_attr!r}, {self.b_attr_value!r})"
 
 
 class BootstrapSwitch(BaseInput):
-    """ represents checkbox like switch control. Widgetastic checkbox doesn't work right for
+    """represents checkbox like switch control. Widgetastic checkbox doesn't work right for
     this control.
     .. code-block:: python
 
@@ -1677,31 +1734,34 @@ class BootstrapSwitch(BaseInput):
         switch.read()
     """
 
-    PARENT = './..'
+    PARENT = "./.."
     ROOT = ParametrizedLocator(
-        '|'.join([
-            './/div/text()[normalize-space(.)={@label|quote}]/'
-            'preceding-sibling::div[1]//'
-            'div[contains(@class, "bootstrap-switch-container")]'
-            '{@input}',
-            './/div/div[contains(@class, "bootstrap-switch-container")]'
-            '{@input}']))
+        "|".join(
+            [
+                ".//div/text()[normalize-space(.)={@label|quote}]/"
+                "preceding-sibling::div[1]//"
+                'div[contains(@class, "bootstrap-switch-container")]'
+                "{@input}",
+                './/div/div[contains(@class, "bootstrap-switch-container")]' "{@input}",
+            ]
+        )
+    )
 
     def __init__(self, parent, id=None, name=None, label=None, logger=None):
         self._label = label
         if not (id or name or self._label):
-            raise ValueError('either id, name or label should be present')
+            raise ValueError("either id, name or label should be present")
         elif name is not None and self._label is None:
-            self.input = '//input[@name={}]'.format(quote(name))
-            self.label = ''
+            self.input = f"//input[@name={quote(name)}]"
+            self.label = ""
         elif id is not None and self._label is None:
-            self.input = '//input[@id={}]'.format(quote(id))
-            self.label = ''
+            self.input = f"//input[@id={quote(id)}]"
+            self.label = ""
         elif self._label is not None and name is None and id is None:
-            self.input = '//input'
+            self.input = "//input"
             self.label = self._label
         else:
-            raise ValueError('label, id and name cannot be used together')
+            raise ValueError("label, id and name cannot be used together")
 
         BaseInput.__init__(self, parent, locator=self.ROOT, logger=logger)
 
@@ -1710,9 +1770,9 @@ class BootstrapSwitch(BaseInput):
         # it seems there is a bug in patternfly lib because in some cases
         # BootstrapSwitch->input.checked returns False when control is definitely checked
         classes = self.browser.classes(self)
-        if 'ng-not-empty' in classes:
+        if "ng-not-empty" in classes:
             return True
-        elif 'ng-empty' in classes:
+        elif "ng-empty" in classes:
             return False
         else:
             return self.browser.is_selected(self)
@@ -1739,7 +1799,8 @@ class BootstrapSwitch(BaseInput):
             self.browser.click(self._clickable_el)
             if self.selected != value:
                 raise WidgetOperationFailed(
-                    'Failed to set the bootstrap switch to requested value.')
+                    "Failed to set the bootstrap switch to requested value."
+                )
             return True
 
     def read(self):
@@ -1752,13 +1813,16 @@ class AboutModal(Widget):
 
     Provides a close method
     """
+
     # ROOT_LOC only used when id is not passed to constructor
-    ROOT_LOC = ('//div[contains(@class, "modal") and contains(@class, "fade") '
-                'and .//div[contains(@class, "about-modal-pf")]]')
+    ROOT_LOC = (
+        '//div[contains(@class, "modal") and contains(@class, "fade") '
+        'and .//div[contains(@class, "about-modal-pf")]]'
+    )
     CLOSE_LOC = './/div[@class="modal-header"]/button[@class="close" and @data-dismiss="modal"]'
     ITEMS_LOC = './/div[@class="modal-body"]/div[@class="product-versions-pf"]/ul/li'
     # These are relative to the <li> elements under ITEMS_LOC above
-    LABEL_LOC = './strong'
+    LABEL_LOC = "./strong"
     # widgets for the title+trademark lines
     TITLE_LOC = './/div[@class="modal-body"]/*[self::h1 or self::h2]'
     TRADEMARK_LOC = './/div[@class="modal-body"]/div[@class="trademark-pf"]'
@@ -1770,11 +1834,12 @@ class AboutModal(Widget):
     def __locator__(self):
         """If id was passed, parametrize it into a locator, otherwise use ROOT_LOC"""
         if self.id is not None:
-            return ('//div[normalize-space(@id)="{}" and '
-                    'contains(@class, "modal") and '
-                    'contains(@class, "fade") and '
-                    './/div[contains(@class, "about-modal-pf")]]'
-                    .format(self.id))
+            return (
+                '//div[normalize-space(@id)="{}" and '
+                'contains(@class, "modal") and '
+                'contains(@class, "fade") and '
+                './/div[contains(@class, "about-modal-pf")]]'.format(self.id)
+            )
         else:
             return self.ROOT_LOC
 
@@ -1782,7 +1847,7 @@ class AboutModal(Widget):
     def is_open(self):
         """Is the about modal displayed right now"""
         try:
-            return 'in' in self.browser.classes(self)
+            return "in" in self.browser.classes(self)
         except NoSuchElementException:
             return False
 
@@ -1812,25 +1877,26 @@ class AboutModal(Widget):
             element_text = self.browser.text(element)
 
             # value will include the label from the <strong> block, parse it out
-            items.update({key: element_text.replace(key, '', 1).lstrip()})
+            items.update({key: element_text.replace(key, "", 1).lstrip()})
         return items
 
 
 class Modal(View):
-    """ Patternfly modal widget
+    """Patternfly modal widget
 
-        https://www.patternfly.org/pattern-library/widgets/#modal
+    https://www.patternfly.org/pattern-library/widgets/#modal
     """
-    ROOT = ('.//div[contains(@class, "modal") '
-            'and contains(@class, "fade") and @role="dialog"]')
+
+    ROOT = './/div[contains(@class, "modal") ' 'and contains(@class, "fade") and @role="dialog"]'
 
     def __init__(self, parent, id=None, logger=None):
         self.id = id
         if id:
             self.ROOT = ParametrizedLocator(
-                './/div[normalize-space(@id)={@id|quote} and '
+                ".//div[normalize-space(@id)={@id|quote} and "
                 'contains(@class, "modal") and contains(@class, "fade") '
-                'and @role="dialog"]')
+                'and @role="dialog"]'
+            )
 
         View.__init__(self, parent, logger=logger)
 
@@ -1840,12 +1906,12 @@ class Modal(View):
 
     @property
     def text(self):
-        """ Option for compatibility with selenium alerts """
+        """Option for compatibility with selenium alerts"""
         return self.title
 
     @property
     def is_displayed(self):
-        """ Is the modal currently open? """
+        """Is the modal currently open?"""
         try:
             return "in" in self.browser.classes(self)
         except NoSuchElementException:
@@ -1857,44 +1923,48 @@ class Modal(View):
 
     @View.nested
     class header(View):  # noqa
-        """ The header of the modal """
+        """The header of the modal"""
+
         ROOT = './/div[@class="modal-header"]'
         close = Text(locator='.//button[@class="close"]')
         title = Text(locator='.//h4[@class="modal-title"]')
 
     @View.nested
     class body(View):  # noqa
-        """ The body of the modal """
+        """The body of the modal"""
+
         ROOT = './/div[@class="modal-body"]'
         body_text = Text(locator=".//h4")
 
     @View.nested
     class footer(View):  # noqa
-        """ The footer of the modal """
+        """The footer of the modal"""
+
         ROOT = './/div[@class="modal-footer"]'
         dismiss = Button("Cancel")
         accept = Button(classes=Button.PRIMARY)
 
     def dismiss(self):
-        """ Cancel the modal"""
+        """Cancel the modal"""
         self.footer.dismiss.click()
 
     def accept(self):
-        """ Submit/Save/Accept/Delete for the modal."""
+        """Submit/Save/Accept/Delete for the modal."""
         self.footer.accept.click()
 
 
 class BreadCrumb(Widget):
-    """ Patternfly BreadCrumb navigation control
+    """Patternfly BreadCrumb navigation control
 
     .. code-block:: python
 
         breadcrumb = BreadCrumb()
         breadcrumb.click_location(breadcrumb.locations[0])
     """
+
     ROOT = '//ol[contains(@class, "breadcrumb")]'
-    ELEMENTS = './/li'
-    LINK = './/a'
+    ELEMENTS = ".//li"
+    LINK = ".//a"
 
     def __init__(self, parent, locator=None, logger=None):
         Widget.__init__(self, parent=parent, logger=logger)
@@ -1914,15 +1984,15 @@ class BreadCrumb(Widget):
     @property
     def active_location(self):
         br = self.browser
-        return next(br.text(loc) for loc in self._path_elements if 'active' in br.classes(loc))
+        return next(br.text(loc) for loc in self._path_elements if "active" in br.classes(loc))
 
     def click_location(self, name, handle_alert=True):
         br = self.browser
         try:
             location = next(loc for loc in self._path_elements if br.text(loc) == name)
         except StopIteration:
-            self.logger.exception(f'Given location name [{name}] not found')
-            raise WidgetOperationFailed('Unable to click breadcrumb location, location not found')
+            self.logger.exception(f"Given location name [{name}] not found")
+            raise WidgetOperationFailed("Unable to click breadcrumb location, location not found")
         result = br.click(br.element(self.LINK, parent=location), ignore_ajax=handle_alert)
         if handle_alert:
             self.browser.handle_alert(wait=2.0, squash=True)
@@ -1954,23 +2024,25 @@ class DatePicker(View):
         # read selected date for DatePicker
         date.read()
     """
-    textbox = TextInput(locator=Parameter('@locator'))
 
-    def __init__(self, parent, id=None, name=None,
-                strptime_format='%m/%d/%Y', locator=None, logger=None): # noqa
+    textbox = TextInput(locator=Parameter("@locator"))
+
+    def __init__(
+        self, parent, id=None, name=None, strptime_format="%m/%d/%Y", locator=None, logger=None
+    ):  # noqa
         View.__init__(self, parent=parent, logger=logger)
 
         self.strptime_format = strptime_format
-        base_locator = './/*[(self::input or self::textarea) and @{}={}]'
+        base_locator = ".//*[(self::input or self::textarea) and @{}={}]"
 
         if id:
-            self.locator = base_locator.format('id', quote(id))
+            self.locator = base_locator.format("id", quote(id))
         elif name:
-            self.locator = base_locator.format('name', quote(name))
+            self.locator = base_locator.format("name", quote(name))
         elif locator:
             self.locator = locator
         else:
-            raise TypeError('You need to specify either, id, name or locator for DatePicker')
+            raise TypeError("You need to specify either, id, name or locator for DatePicker")
 
     class HeaderView(View):
         prev_button = Text(".//*[contains(@class, 'prev')]")
@@ -1987,11 +2059,11 @@ class DatePicker(View):
         @property
         def active(self):
             for el, web_el in self._elements.items():
-                if bool(self.browser.classes(web_el) & {'active', 'focused'}):
+                if bool(self.browser.classes(web_el) & {"active", "focused"}):
                     return el
 
     @View.nested
-    class date_pick(HeaderView):    # noqa
+    class date_pick(HeaderView):  # noqa
         ROOT = ".//*[contains(@class, 'datepicker-days')]"
         DATES = ".//table/tbody/tr/td"
 
@@ -1999,12 +2071,12 @@ class DatePicker(View):
         def _elements(self):
             dates = {}
             for el in self.browser.elements(self.DATES):
-                if not bool({'old', 'new', 'disabled'} & self.browser.classes(el)):
+                if not bool({"old", "new", "disabled"} & self.browser.classes(el)):
                     dates.update({int(el.text): el})
             return dates
 
     @View.nested
-    class month_pick(HeaderView):   # noqa
+    class month_pick(HeaderView):  # noqa
         ROOT = ".//*[contains(@class, 'datepicker-months')]"
         MONTHS = ".//table/tbody/tr/td/*"
 
@@ -2012,12 +2084,12 @@ class DatePicker(View):
         def _elements(self):
             months = {}
             for el in self.browser.elements(self.MONTHS):
-                if not bool({'disabled'} & self.browser.classes(el)):
+                if not bool({"disabled"} & self.browser.classes(el)):
                     months.update({el.text: el})
             return months
 
     @View.nested
-    class year_pick(HeaderView):    # noqa
+    class year_pick(HeaderView):  # noqa
         ROOT = ".//*[contains(@class, 'datepicker-years')]"
         YEARS = ".//table/tbody/tr/td/*"
 
@@ -2025,7 +2097,7 @@ class DatePicker(View):
         def _elements(self):
             years = {}
             for el in self.browser.elements(self.YEARS):
-                if not bool({'old', 'new', 'disabled'} & self.browser.classes(el)):
+                if not bool({"old", "new", "disabled"} & self.browser.classes(el)):
                     years.update({int(el.text): el})
             return years
 
@@ -2036,7 +2108,7 @@ class DatePicker(View):
                     return True
 
         def select(self, value):
-            start_yr, end_yr = [int(item) for item in self.datepicker_switch.read().split('-')]
+            start_yr, end_yr = (int(item) for item in self.datepicker_switch.read().split("-"))
             if value > end_yr:
                 for _ in range(end_yr, value, 10):
                     self.next_button.click()
@@ -2090,7 +2162,7 @@ class DatePicker(View):
         Returns:
             :py:class:`bool`
         """
-        return bool(self.browser.get_attribute('readonly', self.textbox))
+        return bool(self.browser.get_attribute("readonly", self.textbox))
 
     @property
     def date_format(self):
@@ -2099,7 +2171,7 @@ class DatePicker(View):
         Returns:
             :py:class:`str`
         """
-        return self.browser.get_attribute('data-date-format', self.textbox)
+        return self.browser.get_attribute("data-date-format", self.textbox)
 
     @property
     def is_displayed(self):
@@ -2117,9 +2189,10 @@ class StatusNotification(Widget):
     Provides some attributes for storing the notification class based on icon constants
     And a click method for those notifications tied to an anchor
     """
+
     # Notification count will be in anchor with an icon
-    ANCHOR = './a'
-    TEXT = './*[normalize-space(.)]'
+    ANCHOR = "./a"
+    TEXT = "./*[normalize-space(.)]"
 
     def __init__(self, parent, note_element, logger):
         Widget.__init__(self, parent=parent, logger=logger)
@@ -2160,10 +2233,7 @@ class StatusNotification(Widget):
         Returns:
             dict containing icon and text attributes
         """
-        return {
-            'icon': self.icon,
-            'text': self.text
-        }
+        return {"icon": self.icon, "text": self.text}
 
     def click(self):
         """Click the anchor for this notification
@@ -2180,25 +2250,29 @@ class AggregateStatusCard(View):
     This covers the standard type card
     https://www.patternfly.org/pattern-library/cards/aggregate-status-card/#example-code-1
     """
+
     # Get the aggregate-status card div, per patternfly reference markup
     ROOT = ParametrizedLocator(
         './/div[contains(@class, "card-pf-aggregate-status") '
         'and not(contains(@class, "card-pf-aggregate-status-mini")) '
         'and h2[contains(@class, "card-pf-title")]'
-        '//span[normalize-space(following::text())={@name|quote}]]'
+        "//span[normalize-space(following::text())={@name|quote}]]"
     )
 
     # count is in span with specific class under main card div
     TITLE = './h2[contains(@class, "card-pf-title")]'
     COUNT = './/span[contains(@class, "card-pf-aggregate-status-count")]'
-    TITLE_ANCHOR = '/a'
+    TITLE_ANCHOR = "/a"
 
     BODY = './div[contains(@class, "card-pf-body")]'
-    NOTIFICATION = ('./p[contains(@class, "card-pf-aggregate-status-notifications")]'
-                    '//span[contains(@class, "card-pf-aggregate-status-notification")]')
+    NOTIFICATION = (
+        './p[contains(@class, "card-pf-aggregate-status-notifications")]'
+        '//span[contains(@class, "card-pf-aggregate-status-notification")]'
+    )
 
-    ACTION_ANCHOR = ParametrizedLocator('.//a[@title={@action_title|quote} '
-                                        'or @data-original-title={@action_title|quote}]')
+    ACTION_ANCHOR = ParametrizedLocator(
+        ".//a[@title={@action_title|quote} " "or @data-original-title={@action_title|quote}]"
+    )
 
     def __init__(self, parent, name, locator=None, action_title=None, logger=None):
         """Constructor, using name, can specify locator
@@ -2235,11 +2309,7 @@ class AggregateStatusCard(View):
             int count from the element
         """
         try:
-            return int(
-                self.browser.text(
-                    self.browser.element(self.COUNT, parent=self._title)
-                )
-            )
+            return int(self.browser.text(self.browser.element(self.COUNT, parent=self._title)))
         except NoSuchElementException:
             return None
 
@@ -2268,21 +2338,12 @@ class AggregateStatusCard(View):
         except NoSuchElementException:
             return []
         return [
-            StatusNotification(parent=self, note_element=note, logger=self.logger)
-            for note in notes
+            StatusNotification(parent=self, note_element=note, logger=self.logger) for note in notes
         ]
 
     def read(self):
-        items = dict(
-            icon=self.icon,
-            count=self.count,
-            name=self.name
-        )
-        items.update(
-            {
-                'notifications': [note.read() for note in self.notifications]
-            }
-        )
+        items = dict(icon=self.icon, count=self.count, name=self.name)
+        items.update({"notifications": [note.read() for note in self.notifications]})
         return items
 
     def click(self):
@@ -2295,7 +2356,7 @@ class AggregateStatusCard(View):
         if self.action_title:
             self.browser.click(self.ACTION_ANCHOR, parent=self)
         else:
-            raise LocatorNotImplemented('No action_title, cannot locate action element for click')
+            raise LocatorNotImplemented("No action_title, cannot locate action element for click")
 
 
 class AggregateStatusMiniCard(AggregateStatusCard):
@@ -2304,12 +2365,13 @@ class AggregateStatusMiniCard(AggregateStatusCard):
     slightly different display and locator
     https://www.patternfly.org/pattern-library/cards/aggregate-status-card/#example-code-2
     """
+
     # TODO testing of parent methods against mini card
     ROOT = ParametrizedLocator(
         './/div[contains(@class, "card-pf-aggregate-status") '
         'and contains(@class, "card-pf-aggregate-status-mini") '
         'and h2[contains(@class, "card-pf-title")]'
-        '//span[normalize-space(following::text())={@name|quote}]]'
+        "//span[normalize-space(following::text())={@name|quote}]]"
     )
 
 
@@ -2400,6 +2462,7 @@ class SparkLineChart(Widget, ClickableMixin):
     .. code-block:: python
         spark_line_chart = SparkLineChart(id="sparklineChart")
     """
+
     ROOT = ParametrizedLocator("{@locator}")
     BASE_LOCATOR = ".//div[@id={}]"
     # axis event mapping
@@ -2439,6 +2502,7 @@ class SingleLineChart(SparkLineChart):
     .. code-block:: python
         single_line_chart = SingleLineChart(id="singleLineChart")
     """
+
     X_AXIS = ".//*[contains(@class, 'c3-axis c3-axis-x')]/*[contains(@class, 'tick')]"
     tooltip = Table(locator=".//div[contains(@class,'c3-tooltip-container')]/table")
 
@@ -2497,6 +2561,7 @@ class LineChart(SingleLineChart):
     .. code-block:: python
         line_chart = LineChart(id="lineChart")
     """
+
     LEGENDS = ".//*[contains(@class, 'c3-legend-item c3-legend-item-')]"
 
     @property
@@ -2505,7 +2570,7 @@ class LineChart(SingleLineChart):
 
     @property
     def legends(self):
-        """ Get all available legends
+        """Get all available legends
 
         Returns:
             :py:class:`list` all available legends
@@ -2513,7 +2578,7 @@ class LineChart(SingleLineChart):
         return list(self._legends.keys())
 
     def legend_is_displayed(self, leg):
-        """ Check legend is available or not on Chart
+        """Check legend is available or not on Chart
         Args:
             leg: `str` of legend
 
@@ -2587,16 +2652,19 @@ class LineChart(SingleLineChart):
 
 class SingleSplineChart(SingleLineChart):
     """Represents the Single Spline Chart from Patternfly (Data Visualization)."""
+
     pass
 
 
 class SplineChart(LineChart):
     """Represents the Spline Chart having legends from Patternfly (Data Visualization)."""
+
     pass
 
 
 class BarChart(SingleLineChart):
     """Represents the Vertical/Horizontal Bar Chart from Patternfly (Data Visualization)."""
+
     pass
 
 
@@ -2604,19 +2672,18 @@ class GroupedBarChart(LineChart):
     """Represents the Grouped Vertical/Horizontal/Stacked Bar Chart (Having legends)
     from Patternfly (Data Visualization).
     """
+
     pass
 
 
 class ListItem(ParametrizedView):
-    """ Basic item object for use with ItemsList"""
+    """Basic item object for use with ItemsList"""
 
     PARAMETERS = ("index",)
-    ROOT = ParametrizedLocator(
-        './/div[contains(@class,"list-group-item") and position()={index}]'
-    )
+    ROOT = ParametrizedLocator('.//div[contains(@class,"list-group-item") and position()={index}]')
     DESCRIPTION_LOCATOR = './/span[contains(@class,"description-column")]'
-    EXPAND_LOCATOR = './/span[contains(@class,"{}")]'.format(PFIcon.icons.ANGLE_RIGHT)
-    COLLAPSE_LOCATOR = './/span[contains(@class,"{}")]'.format(PFIcon.icons.ANGLE_DOWN)
+    EXPAND_LOCATOR = f'.//span[contains(@class,"{PFIcon.icons.ANGLE_RIGHT}")]'
+    COLLAPSE_LOCATOR = f'.//span[contains(@class,"{PFIcon.icons.ANGLE_DOWN}")]'
 
     # note that this has 1-based indexing
     index = Parameter("index")
@@ -2702,31 +2769,33 @@ class ItemsList(View):
         self._assoc_column = assoc_column
 
     def __getitem__(self, item_filter):
-        """ allows the ability to directly select AlertItem by a filter with
-            item = view.alerts_list[item_filter],
-            item_filter can be of type: string, dict, int, or None
+        """allows the ability to directly select AlertItem by a filter with
+        item = view.alerts_list[item_filter],
+        item_filter can be of type: string, dict, int, or None
         """
         if isinstance(item_filter, int):
             return next(self.items(item_filter))
         elif isinstance(item_filter, str) or isinstance(item_filter, dict) or item_filter is None:
             return self.items(item_filter)
         else:
-            raise ValueError("item_filter is of {} but must be of type: "
-                             "str, dict, int, or None.".format(type(item_filter)))
+            raise ValueError(
+                "item_filter is of {} but must be of type: "
+                "str, dict, int, or None.".format(type(item_filter))
+            )
 
     # properties
     @property
     def assoc_column(self):
-        return self._assoc_column or 'description'  # note the defualt
+        return self._assoc_column or "description"  # note the defualt
 
     @property
     def item_count(self):
-        """ returns how many rows are currently in the table."""
+        """returns how many rows are currently in the table."""
         return len(self.browser.elements(self.ITEMS, parent=self))
 
     # methods
     def items(self, item_filter=None):
-        """ returns a generator for all Items matching the item_filter"""
+        """returns a generator for all Items matching the item_filter"""
         start = 1  # start at 1 and not 0 since position() returns 1 as the first index
         stop = self.item_count + 1
         # filter via key, value pair
@@ -2766,22 +2835,23 @@ class FlashMessage(ParametrizedView):
     https://www.patternfly.org/v3/pattern-library/communication/inline-notifications/
     Parametrized by the XPath index of the notification within the containing FlashMessages block.
     """
+
     TYPE_MAPPING = {
-        'alert-warning': 'warning',
-        'alert-success': 'success',
-        'alert-danger': 'error',
-        'alert-info': 'info'
+        "alert-warning": "warning",
+        "alert-success": "success",
+        "alert-danger": "error",
+        "alert-info": "info",
     }
 
-    PARAMETERS = ('index',)
+    PARAMETERS = ("index",)
     ROOT = ParametrizedLocator('.//div[contains(@class, "alert") and position()={index}]')
 
-    TEXT_LOCATOR = './strong'
+    TEXT_LOCATOR = "./strong"
     DISMISS_LOCATOR = './button[contains(@class, "close")]'
     ICON_LOCATOR = './span[contains(@class, "pficon")]'
 
     # XPath index starting at 1
-    index = Parameter('index')
+    index = Parameter("index")
 
     @property
     def text(self):
@@ -2801,7 +2871,7 @@ class FlashMessage(ParametrizedView):
             return None
 
         for class_ in self.browser.classes(e):
-            if class_.startswith('pficon-'):
+            if class_.startswith("pficon-"):
                 return class_[7:]
         else:
             return None
@@ -2813,29 +2883,34 @@ class FlashMessage(ParametrizedView):
             if class_ in self.TYPE_MAPPING:
                 return self.TYPE_MAPPING[class_]
         else:
-            raise ValueError("Could not find a proper notification type."
-                             f" Available classes: {self.TYPE_MAPPING!r}."
-                             f" Notification types: {classes!r}.")
+            raise ValueError(
+                "Could not find a proper notification type."
+                f" Available classes: {self.TYPE_MAPPING!r}."
+                f" Notification types: {classes!r}."
+            )
 
 
 class FlashMessages(View):
     """Represent the div block containing the individual inline notifications."""
+
     ROOT = './/div[@id="flash_msg_div"]'
     MSG_LOCATOR = './div[contains(@class, "flash_text_div")]/div[contains(@class, "alert")]'
     msg_class = FlashMessage
 
     def __getitem__(self, msg_filter):
         """Allow the direct selection of a FlashMessage with a filter:
-           msg = view.flash[msg_filter]
-           msg_filter can be of type dict, int, or None.
+        msg = view.flash[msg_filter]
+        msg_filter can be of type dict, int, or None.
         """
         if isinstance(msg_filter, int):
             return next(self.messages(index=msg_filter))
         elif isinstance(msg_filter, dict) or msg_filter is None:
             return self.messages(**msg_filter)
         else:
-            raise ValueError(f"msg_filter {msg_filter} is of type {type(msg_filter)}"
-                             " but must be dict, int, or None.")
+            raise ValueError(
+                f"msg_filter {msg_filter} is of type {type(msg_filter)}"
+                " but must be dict, int, or None."
+            )
 
     @property
     def msg_count(self):
@@ -2864,13 +2939,13 @@ class FlashMessages(View):
               index: The (0-based) index of the notification in the list to return.
                      Default: None.
         """
-        text = msg_filter.get('text', None)
-        t = msg_filter.get('t', None)
-        partial = msg_filter.get('partial', False)
-        inverse = msg_filter.get('inverse', False)
-        index = msg_filter.get('index', None)
+        text = msg_filter.get("text", None)
+        t = msg_filter.get("t", None)
+        partial = msg_filter.get("partial", False)
+        inverse = msg_filter.get("inverse", False)
+        index = msg_filter.get("index", None)
 
-        types = t if isinstance(t, (tuple, list, set, type(None))) else (t, )
+        types = t if isinstance(t, (tuple, list, set, type(None))) else (t,)
         op = not_ if inverse else bool
 
         # Log message describing the type of notification lookup.
@@ -2912,7 +2987,8 @@ class FlashMessages(View):
             if isinstance(text, Pattern) and not op(text.match(msg.text)):
                 continue
             if isinstance(text, str) and not op(
-                    (partial and text in msg.text) or (not partial and text == msg.text)):
+                (partial and text in msg.text) or (not partial and text == msg.text)
+            ):
                 continue
 
             yield msg
@@ -2945,7 +3021,7 @@ class FlashMessages(View):
             raise AssertionError(f"assert_no_error: found error notifications {errs}")
 
     def assert_message(self, text, t=None, partial=False):
-        msg_filter = {'text': text, 't': t, 'partial': partial}
+        msg_filter = {"text": text, "t": t, "partial": partial}
         all_msgs = self.read()
         if not self.read(**msg_filter):
             raise AssertionError(
@@ -2955,7 +3031,7 @@ class FlashMessages(View):
 
     def assert_success_message(self, text, t=None, partial=False):
         self.assert_no_error()
-        self.assert_message(text, t=(t or 'success'), partial=partial)
+        self.assert_message(text, t=(t or "success"), partial=partial)
 
     @property
     def is_displayed(self):

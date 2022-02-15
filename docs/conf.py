@@ -1,59 +1,46 @@
-# -*- coding: utf-8 -*-
 import os
-import pkg_resources
+import sys
 from datetime import datetime
 
-__distribution = pkg_resources.get_distribution('widgetastic.patternfly')
+import pkg_resources
+
+__distribution = pkg_resources.get_distribution("widgetastic.patternfly")
+
+# update sys.path so autodoc can import the modules
+modules_path = os.path.abspath("../src/widgetastic_patternfly")
+sys.path.insert(0, modules_path)
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.doctest',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.intersphinx',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
 ]
 
-intersphinx_mapping = {
-    'python': ('http://docs.python.org/2.7', None),
-    'pytest': ('http://pytest.org/latest/', None),
-    'selenium': ('http://selenium-python.readthedocs.org/', None),
-    'widgetastic.core': ('http://widgetasticcore.readthedocs.io/en/latest/', None),
-}
-
-# Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
-source_suffix = '.rst'
-master_doc = 'index'
+master_doc = "index"
 
 # General information about the project.
 project = __distribution.project_name
-copyright = '2016-{}, Milan Falešník (Apache license 2)'.format(datetime.now().year)
-author = 'Milan Falešník'
+copyright = f"2016-{datetime.now().year}, Milan Falešník (Apache license 2)"
+author = "Milan Falešník"
 
 
 # The full version, including alpha/beta/rc tags.
 release = __distribution.version
-version = '.'.join(release.split('.')[:2])
+version = ".".join(release.split(".")[:2])
 
-exclude_patterns = []
+exclude_patterns = ["_build"]
 
-pygments_style = 'sphinx'
-todo_include_todos = False
+html_theme = "default"
 
-
-html_theme = 'haiku'
-html_static_path = ['_static']
-
-htmlhelp_basename = 'deprecatedoc'
+templates_path = ["_templates"]
 
 
 def run_apidoc(_):
-    from sphinx.apidoc import main as apidoc_main
-    modules = ['src/widgetastic_patternfly']
-    for module in modules:
-        cur_dir = os.path.abspath(os.path.dirname(__file__))
-        output_path = os.path.join(cur_dir, module, 'doc')
-        apidoc_main(['-e', '-f', '-o', output_path, '.', '--force'])
+    from sphinx.ext.apidoc import main as apidoc_main
+
+    cur_dir = os.path.abspath(".")
+    output_path = os.path.join(cur_dir, "source")
+    apidoc_main(["-e", "-f", "-o", output_path, modules_path, "--force"])
 
 
 def setup(app):
-    app.connect('builder-inited', run_apidoc)
+    app.connect("builder-inited", run_apidoc)
