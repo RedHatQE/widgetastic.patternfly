@@ -1,8 +1,8 @@
 # module for patternfly utility classes and methods
-from aenum import Constant
+from enum import Enum
 
 
-class IconConstants(Constant):
+class IconConstants(Enum):
     """class to hold just the icon constants
 
     References:
@@ -27,8 +27,8 @@ class IconConstants(Constant):
     USER = "pficon-user"
 
     @classmethod
-    def icon_strings(cls):
-        return {a: s for a, s in vars(IconConstants).items() if isinstance(s, Constant)}
+    def icon_enums(cls):
+        return {a: s for a, s in vars(IconConstants).items() if isinstance(s, Enum)}
 
 
 class PFIcon:
@@ -51,7 +51,6 @@ class PFIcon:
         Raises:
             widgetastic.exceptions.NoSuchElementException when no icon span found
         """
-
         els = browser.elements(
             './/*[contains(@class, "pficon") or contains(@class, "fa")]', parent=element
         )
@@ -65,7 +64,7 @@ class PFIcon:
         icon_name = icon_class.pop() if icon_class else None
         icons = [
             getattr(cls.icons, attr, None)
-            for attr, icon_string in cls.icons.icon_strings().items()
-            if icon_string == icon_name
+            for attr, icon_string in cls.icons.icon_enums().items()
+            if icon_string.value == icon_name
         ]
         return icons.pop() if icons else None
