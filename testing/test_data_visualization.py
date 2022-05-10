@@ -46,7 +46,7 @@ LINE_LEGENDS = ["data1", "data2", "data3", "data4", "data5"]
 BAR_LEGENDS = ["Q1", "Q3", "Q2", "Q4"]
 
 
-class TestDataVisualization(View):
+class DataVisualization(View):
     spark = SparkLineChart(id="sparklineChart")
 
     single_line = SingleLineChart(id="singleLineChart")
@@ -65,7 +65,7 @@ class TestDataVisualization(View):
 
 
 def test_spark_line_chart(browser):
-    view = TestDataVisualization(browser)
+    view = DataVisualization(browser)
 
     assert view.spark.is_displayed
     data = view.spark.read()
@@ -77,7 +77,7 @@ def test_spark_line_chart(browser):
     "graph", ["single_line", "single_spline", "vertical_bar_chart", "horizontal_bar_chart"]
 )
 def test_single_legend_charts(browser, graph):
-    view = TestDataVisualization(browser)
+    view = DataVisualization(browser)
     chart = getattr(view, graph)
     data = LINE_DATA_1 if "line" in graph else BAR_DATA_1
 
@@ -103,7 +103,7 @@ def test_single_legend_charts(browser, graph):
     ],
 )
 def test_multi_legend_charts(browser, graph):
-    view = TestDataVisualization(browser)
+    view = DataVisualization(browser)
     chart = getattr(view, graph)
 
     data = LINE_DATA if "line" in graph else BAR_DATA
