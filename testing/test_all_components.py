@@ -4,6 +4,7 @@ them in a programatically defined view class as a new type, which is then
 instantiated. The widgets appear to get instantiated upon accessing them in the instantiated view.
 After all of this, the behavior of the widget objects can be tested.
 """
+
 import inspect
 
 import pytest

@@ -1,4 +1,5 @@
 """This package contains classes that represent widgets in Patternfly for Widgetastic"""
+
 import functools
 import re
 import time
